@@ -175,7 +175,7 @@
     font-size:12.5px; line-height:1.45; border-left:2px solid var(--brand);
     padding:3px 0 3px 10px; cursor:text;
   }
-  .proc-summary.empty{ color:var(--muted); font-style:italic; }
+  .proc-summary.empty{ display:none; }
 
   @media (max-width:480px){ .addon-grid{ grid-template-columns:1fr; } }
 
@@ -1043,7 +1043,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '14';
+const FORM_VERSION = '15';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
