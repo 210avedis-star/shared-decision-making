@@ -712,9 +712,9 @@ const RISKS = [
   ["Deep Venous Thrombosis (DVT) and Pulmonary Embolus (PE).", "As with any surgery, I am at risk for a blood clot to form. This may form in my leg (DVT) or it may travel to my lung (PE)."],
   ["Dural Tear (Nerve Sac Tear).", "Spinal surgery involves working around the nerves in my spine. There is a possibility that a tear in the sac containing the nerves can occur. If a tear should occur, it will be fixed during surgery. However, I may need to be on bed rest the first day after surgery."],
   ["New Neurologic Deficit (Nerve Root Irritation, Injury, or Paralysis).", "This is a very rare possibility, but can occur due to manipulating the nerve during surgery or placing of the implant. Irritation to the nerve root usually resolves in several weeks. The risk of this occurring is less than 1%."],
+  ["Anesthesia and positioning risks include:", "arm or leg nerve injury, skin breakdown, adverse drug reaction, and/or blindness."],
   ["For anterior lumbosacral fusions", "there is a risk for major vessel / intestine / organ injury and a small risk of sterility in male patients."],
-  ["For anterior cervical decompression fusions", "there is a risk for swallowing and voice problems. There is a risk of temporary or permanent trouble swallowing or talking."],
-  ["Anesthesia and positioning risks include:", "arm or leg nerve injury, skin breakdown, adverse drug reaction, and/or blindness."]
+  ["For anterior cervical decompression fusions", "there is a risk for swallowing and voice problems. There is a risk of temporary or permanent trouble swallowing or talking."]
 ];
 
 const ALTERNATIVES = [
@@ -1173,7 +1173,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '21';
+const FORM_VERSION = '22';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
