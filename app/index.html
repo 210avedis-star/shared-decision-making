@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Zero-transmission policy: the browser refuses any attempt by this page to send data anywhere. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
@@ -149,7 +149,9 @@
   .proc-editor{ display:flex; flex-direction:column; gap:6px; }
   .proc-inline{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
   .proc-inline .field{ flex:1 1 140px; min-width:0; }
-  .proc-inline .hrs-field{ flex:1 1 150px; }
+  .proc-inline .proc-field{ flex:4 1 300px; }
+  .proc-inline .lv-field{ flex:1 1 150px; max-width:200px; }
+  .proc-inline .hrs-field{ flex:0 1 120px; }
   .unit-wrap{ display:flex; align-items:baseline; gap:6px; border-bottom:1px solid var(--line); }
   .unit-wrap:focus-within{ border-bottom-color:var(--brand); }
   .unit-wrap input[type=text]{ flex:1; min-width:0; border-bottom:none; }
@@ -192,6 +194,7 @@
   .sig-name{ font-size:11px; color:var(--muted); margin-top:5px; }
 
   .actions{ display:flex; gap:10px; margin-top:10px; }
+  button, select, .init-cell{ touch-action:manipulation; }
   .btn{ flex:1; padding:13px; border-radius:8px; border:none; font-size:14.5px; font-weight:700; cursor:pointer; }
   .btn-primary{ background:var(--brand); color:#fff; }
   .btn-primary:disabled{ background:#C9CFC9; cursor:not-allowed; }
@@ -207,6 +210,8 @@
     box-shadow:0 -6px 20px rgba(0,0,0,.12); user-select:none; -webkit-user-select:none;
   }
   .lv-pad.show{ display:block; }
+  .lv-pad[data-mode="hours"] .kp-levels-only,
+  .lv-pad:not([data-mode="hours"]) .kp-hours-only{ display:none; }
   .lv-row{ display:flex; gap:8px; max-width:640px; margin:0 auto 8px; }
   .lv-row:last-child{ margin-bottom:0; }
   .lv-pad button{
@@ -276,6 +281,14 @@
     .init-cell{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     section.consent{ break-before:column; }
   }
+  /* iPad Safari prints about 20% larger than other browsers, which pushed the form to 3 pages.
+     -webkit-touch-callout is only supported by iPhone/iPad Safari, so this only affects iPad printing. */
+  @supports (-webkit-touch-callout: none){
+    @media print{ .wrap{ zoom:0.82; } }
+  }
+  /* iPad Safari centers the text in date/time boxes; keep it left-aligned like the other fields */
+  input::-webkit-date-and-time-value{ text-align:left; }
+
   /* ----- draw / annotate ----- */
   .annot-canvas{ position:absolute; top:0; left:0; z-index:40; pointer-events:none; touch-action:none; }
   .annot-canvas.active{ pointer-events:auto; }
@@ -334,7 +347,7 @@
       </div>
       <div class="field">
         <label class="f-label" for="patientDob">Date of birth</label>
-        <input type="date" id="patientDob" autocomplete="off">
+        <input type="text" id="patientDob" placeholder="MM/DD/YYYY" inputmode="numeric" maxlength="10" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
       <div class="field">
         <label class="f-label" for="chartNo">Chart # (AdvancedMD)</label>
@@ -354,7 +367,7 @@
       </div>
       <div class="field full">
         <label class="f-label" for="companions">Family / friends present</label>
-        <input type="text" id="companions" placeholder="Names and relationship (e.g. Jane Doe – spouse), or “None”" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+        <input type="text" id="companions" placeholder="e.g. Jane Doe – spouse, or “None”" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
       </div>
     </div>
   </section>
@@ -419,8 +432,7 @@
   </section>
 
   <div class="actions">
-    <button class="btn btn-ghost" id="printBtn" type="button">Print / Save PDF</button>
-    <button class="btn btn-primary" id="completeBtn" type="button">Mark Complete</button>
+    <button class="btn btn-primary" id="printBtn" type="button">Print / Save PDF</button>
   </div>
   <div class="actions">
     <button class="btn btn-danger" id="newPatientBtn" type="button">New Patient (clear form)</button>
@@ -464,7 +476,7 @@
 
   <!-- Quick-entry keypad for spinal levels -->
   <div class="lv-pad" id="lvPad" aria-hidden="true">
-    <div class="lv-row">
+    <div class="lv-row kp-levels-only">
       <button type="button" data-k="C">C</button>
       <button type="button" data-k="T">T</button>
       <button type="button" data-k="L">L</button>
@@ -487,6 +499,8 @@
     <div class="lv-row">
       <button type="button" data-k="-">–</button>
       <button type="button" data-k="/">/</button>
+      <button type="button" data-k=",">,</button>
+      <button type="button" data-k="." class="kp-hours-only">.</button>
       <button type="button" data-k=" " class="wide">space</button>
       <button type="button" data-act="back" class="act" aria-label="Delete">⌫</button>
     </div>
@@ -511,7 +525,7 @@
     </div>
   </div>
 
-  <div class="legal-note">This on-screen form mirrors the clinic's paper Shared Decision Making document. Nothing entered here is saved or sent anywhere. Use “Mark Complete” → Share → Save to Files (On My iPad › SDM Export), AirDrop the PDF to the front desk for upload to AdvancedMD, then tap “New Patient”. <span id="versionNote"></span></div>
+  <div class="legal-note">This on-screen form mirrors the clinic's paper Shared Decision Making document. Nothing entered here is saved or sent anywhere. Use “Print / Save PDF” → Share → Save to Files (On My iPad › SDM Export), AirDrop the PDF to the front desk for upload to AdvancedMD, then tap “New Patient”. <span id="versionNote"></span></div>
 
   <!-- Repeats at the bottom of every printed page so a separated page can be identified -->
   <div class="print-footer" id="printFooter"></div>
@@ -530,7 +544,7 @@ const PROC_TYPES = [
   {
     name:'Posterior Instrumentation and Fusion (Scoliosis / Deformity / Kyphosis)',
     build:lv=>`Posterior ${lv} instrumentation and fusion`,
-    levelPh:'T5-L1, T2-iliac wing',
+    levelPh:'T9-L1, L4-iliac wing',
     defaults:['evoke','auto','allo'],
     addons:[
       { id:'evoke',    label:'Evoked potential neuromonitoring (SSEP/MEP)', text:'evoked potential neuromonitoring (SSEP/MEP)' },
@@ -826,7 +840,7 @@ function buildProcedureRow(){
   const inline = document.createElement('div');
   inline.className = 'proc-inline';
   inline.innerHTML = `
-    <div class="field">
+    <div class="field proc-field">
       <label class="f-label">General procedure</label>
       <select class="proc-select">
         <option value="">Select a procedure…</option>
@@ -838,9 +852,9 @@ function buildProcedureRow(){
       <input type="text" class="proc-levels lv-input" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
     </div>
     <div class="field hrs-field" style="display:none">
-      <label class="f-label">Estimated time (hours)</label>
+      <label class="f-label">Estimated time</label>
       <div class="unit-wrap">
-        <input type="text" class="proc-hours" placeholder="4  or  4 S, 5.5 T" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false">
+        <input type="text" class="proc-hours lv-input" data-kp="hours" placeholder="5.5" inputmode="none" autocomplete="off" autocorrect="off" spellcheck="false">
         <span class="unit">hours</span>
       </div>
     </div>`;
@@ -1043,7 +1057,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '15';
+const FORM_VERSION = '16';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1053,6 +1067,17 @@ const today = new Date();
 document.getElementById('formDate').value = localDate(today);
 document.getElementById('formTime').value = `${pad2(today.getHours())}:${pad2(today.getMinutes())}`;
 document.getElementById('versionNote').textContent = `Form v${FORM_VERSION}.`;
+
+// Date of birth: type digits only, slashes are added automatically (MM/DD/YYYY)
+document.getElementById('patientDob').addEventListener('input', e=>{
+  if(e.inputType && e.inputType.startsWith('delete')) return;
+  // "4/5/1960" -> 04/05/1960: a one-digit month or day followed by "/" gets a leading zero
+  const parts = e.target.value.replace(/[^\d/]/g,'').split('/');
+  for(let i = 0; i < Math.min(2, parts.length - 1); i++) if(parts[i].length === 1) parts[i] = '0' + parts[i];
+  const d = parts.join('').slice(0,8);
+  e.target.value = d.length > 4 ? `${d.slice(0,2)}/${d.slice(2,4)}/${d.slice(4)}`
+                 : d.length > 2 ? `${d.slice(0,2)}/${d.slice(2)}` : d;
+});
 
 document.getElementById('patientName').addEventListener('input', ()=>{
   document.getElementById('sigPatientName').textContent = document.getElementById('patientName').value || '—';
@@ -1135,9 +1160,7 @@ function doPrint(){
 document.getElementById('afterKeep').addEventListener('click', ()=>document.getElementById('afterModal').classList.remove('show'));
 document.getElementById('afterClear').addEventListener('click', wipeForm);
 
-document.getElementById('printBtn').addEventListener('click', doPrint);
-
-/* ---------- Mark Complete: list anything left blank, but never block ---------- */
+/* ---------- Print / Save PDF: list anything left blank, but never block ---------- */
 function blankItems(){
   const out = [];
   if(!val('patientName')) out.push('Patient name');
@@ -1164,7 +1187,7 @@ function blankItems(){
   return out;
 }
 const blankModal = document.getElementById('blankModal');
-document.getElementById('completeBtn').addEventListener('click', ()=>{
+document.getElementById('printBtn').addEventListener('click', ()=>{
   const blanks = blankItems();
   if(!blanks.length){ doPrint(); return; }
   const list = document.getElementById('blankList');
@@ -1187,6 +1210,7 @@ document.getElementById('blankContinue').addEventListener('click', ()=>{
 
   function show(input){
     target = input;
+    pad.dataset.mode = input.dataset.kp || 'levels';
     pad.classList.add('show');
     document.body.classList.add('pad-open');
     const r = input.getBoundingClientRect();

@@ -2,7 +2,7 @@
    This worker only ever downloads the blank form files (GET requests to this site).
    It never sees, stores or sends anything typed into the form: the page's
    Content-Security-Policy blocks all outbound connections from the form itself. */
-const CACHE = 'sdm-form-v15';
+const CACHE = 'sdm-form-v16';
 const FILES = ['./', './index.html', './manifest.webmanifest', './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e=>{

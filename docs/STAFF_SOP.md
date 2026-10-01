@@ -10,7 +10,7 @@
 5. Patient and witness sign. Print the witness name.
 
 **Finishing**
-6. Tap **Mark Complete**. If anything is blank, a list appears: tap **Go back** to fix it, or **Continue**.
+6. Tap **Print / Save PDF**. If anything is blank, a list appears: tap **Go back** to fix it, or **Continue**.
 7. In the print screen, tap **Share (⬆) → Save to Files → On My iPad › SDM Export → Save**.
 8. Open **Files › SDM Export**, long-press the PDF and choose **Share → AirDrop → front-desk Mac**.
 9. Back in the form, tap **Clear for next patient**. (Or **New Patient** at the bottom at any time.)

@@ -33,7 +33,7 @@ HIPAA compliance belongs to the clinic as a whole (risk analysis, policies, trai
 ```
  Exam-room iPad (passcode, MDM, iCloud off)
    SDM form (offline, in-memory only)
-     │ Mark Complete → "These items were left blank — continue?" (never blocks)
+     │ Print / Save PDF → "These items were left blank — continue?" (never blocks)
      ▼
    Print sheet → Share → Save to Files → On My iPad › SDM Export
      │                       PDF name: SDM_Lastname-Firstname_YYYY-MM-DD.pdf
@@ -72,7 +72,7 @@ HIPAA compliance belongs to the clinic as a whole (risk analysis, policies, trai
 - Demographics: added **Family / friends present**.
 - Estimated time is always reported in hours: "4" → "4 hours", "4 S, 5.5 T" → "4 hours S, 5.5 hours T".
 - **Initial all** buttons under each initials column, in every section.
-- **No completion requirements.** *Mark Complete* lists anything blank ("These items were left blank … Continue?") and lets you continue.
+- **No completion requirements.** *Print / Save PDF* lists anything blank ("These items were left blank … Continue?") and lets you continue.
 - **Levels keypad:** large keys for C, T, L, Iliac Wing, 0–9, /, space and –, plus ⌫, Done and **ABC keyboard** (switches to the normal iPad keyboard). It's used for the main Levels box and for every add-on Levels box.
 
 **Workflow and privacy**
