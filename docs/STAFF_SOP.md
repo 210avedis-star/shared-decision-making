@@ -6,8 +6,8 @@
 **During the consult**
 2. Fill in the patient name, DOB, chart #, and family/friends present.
 3. Choose the procedure. Levels, Estimated time, DOB and Chart # open a big keypad; tap **ABC keyboard** on it for the normal iPad keyboard.
-4. Go through each section. Patient and witness initial each box, or tap **Initial all** under a column.
-5. Patient and witness sign. Print the witness name.
+4. Go through each section. Patient and witness initial each box, or tap **Initial all** under a column. The two anterior-fusion risks start crossed out with **N/A**; tap either box only if that risk applies (Initial all skips them).
+5. Patient, witness and physician sign. The date and time fill in automatically when each signature is written. Print the witness name.
 
 **Finishing**
 6. Tap **Save PDF**. If anything is blank, a list appears: tap **Go back** to fix it, or **Continue**.

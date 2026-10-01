@@ -95,6 +95,19 @@
     cursor:pointer; user-select:none; overflow:hidden; padding:2px;
   }
   .init-cell img{ max-width:100%; max-height:100%; display:block; }
+  .init-cell.na{ border-color:#C9CFDB; background:#fff; }
+  .na-text{ font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.04em; }
+  .pdf-mode .na-text{ font-size:8px; }
+  /* faint line through the title of an item marked N/A */
+  body:not(.pdf-mode) .item.na .txt > p > strong{
+    background:linear-gradient(transparent calc(50% - 0.75px), rgba(35,35,35,.4) calc(50% - 0.75px),
+                               rgba(35,35,35,.4) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+  }
+  /* in the PDF the same line is drawn word by word (the PDF renderer mishandles the gradient) */
+  .pdf-mode .item.na .pdf-u{ position:relative; }
+  .pdf-mode .item.na .pdf-u::after{
+    content:''; position:absolute; left:0; right:0; top:52%; border-top:1px solid rgba(35,35,35,.45);
+  }
   .init-cell.filled{ border-color:var(--brand); background:#F5F8FF; }
   .init-head{
     display:flex; justify-content:flex-end; gap:var(--cell-gap);
@@ -154,6 +167,11 @@
   .proc-inline .proc-field{ flex:4 1 300px; }
   .proc-inline .lv-field{ flex:1 1 150px; max-width:200px; }
   .proc-inline .hrs-field{ flex:0 1 120px; }
+  .proc-inline .side-field{ flex:0 0 auto; }
+  .side-btns{ display:flex; gap:6px; padding:2px 0; }
+  .side-btn{ border:1px solid var(--brand-light); background:#fff; color:var(--brand); border-radius:6px;
+    padding:6px 12px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .side-btn.on{ background:var(--brand); color:#fff; border-color:var(--brand); }
   .unit-wrap{ display:flex; align-items:baseline; gap:6px; border-bottom:1px solid var(--line); }
   .unit-wrap:focus-within{ border-bottom-color:var(--brand); }
   .unit-wrap input[type=text]{ flex:1; min-width:0; border-bottom:none; }
@@ -194,6 +212,9 @@
     font-size:11px; color:var(--muted); cursor:pointer;
   }
   .sig-name{ font-size:11px; color:var(--muted); margin-top:5px; }
+  .sig-meta{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; min-height:20px; }
+  .sig-when{ font-size:11px; color:var(--ink); margin-top:5px; white-space:nowrap; }
+  .pdf-mode .sig-when{ font-size:9px; }
 
   .actions{ display:flex; gap:10px; margin-top:10px; }
   button, select, .init-cell{ touch-action:manipulation; }
@@ -415,17 +436,25 @@
       <canvas class="sig-pad" id="padPatient"></canvas>
       <button class="sig-clear" data-target="padPatient" type="button">Clear</button>
     </div>
-    <div class="sig-name" id="sigPatientName">—</div>
+    <div class="sig-meta"><span class="sig-name" id="sigPatientName">—</span><span class="sig-when" id="whenPatient"></span></div>
 
     <label class="f-label" style="margin-top:16px; display:block;">Witness signature</label>
     <div class="sig-pad-wrap">
       <canvas class="sig-pad" id="padWitness"></canvas>
       <button class="sig-clear" data-target="padWitness" type="button">Clear</button>
     </div>
-    <div class="field" style="margin-top:8px;">
+    <div class="sig-meta"><span></span><span class="sig-when" id="whenWitness"></span></div>
+    <div class="field" style="margin-top:4px;">
       <label class="f-label">Witness name (print)</label>
       <input type="text" id="witnessName" placeholder="Staff member witnessing" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
+
+    <label class="f-label" style="margin-top:16px; display:block;">Physician signature</label>
+    <div class="sig-pad-wrap">
+      <canvas class="sig-pad" id="padPhysician"></canvas>
+      <button class="sig-clear" data-target="padPhysician" type="button">Clear</button>
+    </div>
+    <div class="sig-meta"><span class="sig-name" id="sigPhysicianName">Lloyd A. Hey, MD</span><span class="sig-when" id="whenPhysician"></span></div>
   </section>
 
   <div class="actions">
@@ -553,14 +582,15 @@ const PROC_TYPES = [
       { id:'evoke',    label:'Evoked potential neuromonitoring (SSEP/MEP)', text:'evoked potential neuromonitoring (SSEP/MEP)' },
       { id:'ponte',    label:'Ponte osteotomies',            text:'Ponte osteotomies', lv:true },
       { id:'auto',     label:'Local bone autograft',         text:'local bone autograft' },
-      { id:'allo',     label:'Lifenet allograft / bone bank',text:'Lifenet allograft' },
+      { id:'allo',     label:'Lifenet allograft',            text:'Lifenet allograft' },
       { id:'expedium', label:'Synthes Expedium implants',    text:'Synthes Expedium implants' },
       { id:'tlif',     label:'Globus Sable expandable TLIF', text:'Globus Sable expandable TLIF', lv:true },
       { id:'alif',     label:'Globus Sable expandable ALIF', text:'Globus Sable expandable ALIF', lv:true },
-      { id:'foram',    label:'Foraminotomy',                 text:'foraminotomy', lv:true },
+      { id:'foram',    label:'Foraminotomy (single level)',  text:'foraminotomy', lv:true },
+      { id:'forams',   label:'Foraminotomies (multiple levels)', text:'foraminotomies', lv:true },
       { id:'lam',      label:'Laminectomy',                  text:'laminectomy', lv:true },
       { id:'oarm',     label:'O-arm with Stealth and navigation', text:'O-arm with Stealth and navigation' },
-      { id:'ran',      label:'Ran technique',                text:'Ran technique' },
+      { id:'rand',     label:'Rand technique',               text:'Rand technique' },
       OTHER
     ]
   },
@@ -592,19 +622,57 @@ const PROC_TYPES = [
     ]
   },
   {
-    name:'Laminectomy and Foraminotomies',
-    build:lv=>`Posterior ${lv} laminectomy and foraminotomies`,
+    name:'Laminectomy and Foraminotomy / Foraminotomies',
+    build:lv=>`Posterior ${lv} laminectomy`,
     levelPh:'L4',
     defaults:[],
     addons:[
-      { id:'tlif',     label:'TLIF interbody spacer (Globus Sable T-lift)', text:'TLIF interbody spacer (Globus Sable T-lift; expandable TLIF)', lv:true },
-      { id:'instr',    label:'Instrumentation and fusion (extension of construct)', text:'instrumentation and fusion (extension of construct)', lv:true },
+      { id:'foram',    label:'Foraminotomy (single level)',  text:'foraminotomy', lv:true },
+      { id:'forams',   label:'Foraminotomies (multiple levels)', text:'foraminotomies', lv:true },
       { id:'gill',     label:'Gill procedure',               text:'Gill procedure', lv:true },
-      { id:'ponte',    label:'Ponte osteotomies',            text:'Ponte osteotomies', lv:true },
       { id:'tptrim',   label:'Transverse process trimming',  text:'transverse process trimming', lv:true },
       { id:'auto',     label:'Local bone autograft',         text:'local bone autograft' },
-      { id:'allo',     label:'Allograft bone graft',         text:'allograft bone graft' },
       { id:'evoke',    label:'Evoked potential neuromonitoring (selected cases)', text:'evoked potential neuromonitoring' },
+      OTHER
+    ]
+  },
+  {
+    name:'Microdiscectomy',
+    sides:['Left', 'Right'],
+    build:(lv, side)=>`${side ? side + ' ' : ''}${lv} microdiscectomy`,
+    levelPh:'L4-5',
+    defaults:[],
+    addons:[ OTHER ]
+  },
+  {
+    name:'Anterior Cervical Discectomy and Fusion (ACDF)',
+    build:lv=>`Anterior cervical discectomy and fusion (ACDF)${lv ? ' ' + lv : ''}`,
+    levelPh:'C5-6, C6-7',
+    defaults:[],
+    addons:[
+      { id:'evoke',    label:'Evoked potential neuromonitoring', text:'evoked potential neuromonitoring' },
+      OTHER
+    ]
+  },
+  {
+    name:'Sacroiliac (SI) Joint Fusion',
+    sides:['Left', 'Right', 'Bilateral'],
+    build:(lv, side)=>`${side ? side + ' ' : ''}sacroiliac (SI) joint fusion`,
+    noLevels:true,
+    defaults:[],
+    addons:[ OTHER ]
+  },
+  {
+    name:'Dural Repair',
+    build:lv=>`Dural repair${lv ? ' at ' + lv : ''}`,
+    levelPh:'L4-5',
+    defaults:[],
+    addons:[
+      { id:'fiber',    label:'Fiber patch',                  text:'fiber patch' },
+      { id:'biodesign',label:'Biodesign patch',              text:'Biodesign patch' },
+      { id:'duragen',  label:'DuraGen',                      text:'DuraGen' },
+      { id:'surgicel', label:'Surgicel',                     text:'Surgicel' },
+      { id:'pressure', label:'Pressure suture',              text:'pressure suture' },
       OTHER
     ]
   },
@@ -614,7 +682,6 @@ const PROC_TYPES = [
     levelPh:'Site / levels',
     defaults:[],
     addons:[
-      { id:'quad',     label:'Quad rod truss placement',     text:'quad rod truss placement', lv:true },
       { id:'fascia',   label:'Complex fascia repair (nonabsorbable sutures)', text:'complex fascia repair with nonabsorbable sutures' },
       { id:'beads',    label:'Antibiotic beads',             text:'antibiotic beads' },
       { id:'lavage',   label:'Pulse lavage irrigation',      text:'pulse lavage irrigation' },
@@ -667,6 +734,10 @@ const ADDITIONAL = [
 
 let allItemsState = {};
 
+/* Items that start out crossed through with "N/A" in both initials boxes.
+   Tapping either box brings the item back; "Initial all" leaves them alone. */
+const NA_BY_DEFAULT = ['For anterior lumbosacral fusions', 'For anterior cervical decompression fusions'];
+
 /* The two people who initial each item. Edit the labels here if the second
    column should belong to someone else (e.g. "Surgeon" instead of "Witness"). */
 const INITIAL_COLUMNS = [
@@ -710,10 +781,11 @@ function renderList(containerId, data, sectionKey, riskStyle){
   data.forEach((entry, idx)=>{
     const id = sectionKey + '_' + idx;
     const row = document.createElement('div');
-    row.className = 'item' + (riskStyle ? ' risk' : '');
+    const na = NA_BY_DEFAULT.includes(entry[0]);
+    row.className = 'item' + (riskStyle ? ' risk' : '') + (na ? ' na' : '');
     const cells = INITIAL_COLUMNS.map(c=>{
-      allItemsState[id + ':' + c.key] = false;
-      return `<div class="init-cell" data-id="${id}" data-col="${c.key}" title="${c.label} initials"></div>`;
+      allItemsState[id + ':' + c.key] = na;          // N/A counts as answered
+      return `<div class="init-cell${na ? ' na' : ''}" data-id="${id}" data-col="${c.key}" title="${c.label} initials">${na ? NA_HTML : ''}</div>`;
     }).join('');
     row.innerHTML = `
       <div class="txt">${renderEntryHtml(entry)}</div>
@@ -730,6 +802,16 @@ function renderList(containerId, data, sectionKey, riskStyle){
 }
 
 /* ---- initials cells ---- */
+const NA_HTML = '<span class="na-text">N/A</span>';
+// Bring an N/A item back into play: remove the cross-through and empty both boxes.
+function reviveItem(row){
+  row.classList.remove('na');
+  row.querySelectorAll('.init-cell').forEach(c=>{
+    c.classList.remove('na'); clearCell(c);
+    allItemsState[c.getAttribute('data-id') + ':' + c.getAttribute('data-col')] = false;
+  });
+  updateProgress();
+}
 function stampCell(cell, dataUrl){
   cell.innerHTML = `<img src="${dataUrl}" alt="initials">`;
   cell.classList.add('filled');
@@ -754,6 +836,7 @@ function attachCheckHandlers(){
       const col = cell.getAttribute('data-col');
       const key = cell.getAttribute('data-id') + ':' + col;
 
+      if(cell.classList.contains('na')) reviveItem(cell.closest('.item'));   // N/A item: bring it back, then initial
       if(allItemsState[key]){          // tap a filled box to undo it
         clearCell(cell);
         allItemsState[key] = false;
@@ -789,7 +872,7 @@ function attachCheckHandlers(){
       openInitialsModal(col, ()=>{
         // re-stamp every box already initialled in this column
         document.querySelectorAll(`.init-cell[data-col="${col}"]`).forEach(c=>{
-          if(allItemsState[c.getAttribute('data-id') + ':' + col]) stampCell(c, savedInitials[col]);
+          if(allItemsState[c.getAttribute('data-id') + ':' + col] && !c.classList.contains('na')) stampCell(c, savedInitials[col]);
         });
       });
     });
@@ -854,6 +937,10 @@ function buildProcedureRow(){
       <label class="f-label">Levels</label>
       <input type="text" class="proc-levels lv-input" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
     </div>
+    <div class="field side-field" style="display:none">
+      <label class="f-label">Side</label>
+      <div class="side-btns"></div>
+    </div>
     <div class="field hrs-field" style="display:none">
       <label class="f-label">Estimated time</label>
       <div class="unit-wrap">
@@ -867,6 +954,15 @@ function buildProcedureRow(){
   const levels  = inline.querySelector('.proc-levels');
   const hrsField= inline.querySelector('.hrs-field');
   const hours   = inline.querySelector('.proc-hours');
+  const sideField = inline.querySelector('.side-field');
+  const sideBtns  = inline.querySelector('.side-btns');
+  let side = '';
+  sideBtns.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    side = side === b.dataset.side ? '' : b.dataset.side;       // tap again to unselect
+    sideBtns.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.side === side));
+    compose();
+  });
 
   const panel = document.createElement('div');
   panel.className = 'addon-panel';
@@ -911,7 +1007,8 @@ function buildProcedureRow(){
       return;
     }
     const lv = levels.value.trim();
-    let name = type.build(lv).replace(/\s+/g,' ').trim();
+    let name = type.build(lv, side).replace(/\s+/g,' ').trim();
+    name = name.charAt(0).toUpperCase() + name.slice(1);
 
     const parts = [];
     type.addons.forEach(a=>{
@@ -939,12 +1036,17 @@ function buildProcedureRow(){
     if(type){
       renderPanel(type);
       levels.placeholder = type.levelPh || '';
-      lvField.style.display = '';
+      lvField.style.display = type.noLevels ? 'none' : '';
+      if(type.noLevels) levels.value = '';
+      side = '';
+      sideBtns.innerHTML = (type.sides || []).map(s=>`<button type="button" class="side-btn" data-side="${s}">${s}</button>`).join('');
+      sideField.style.display = type.sides ? '' : 'none';
       hrsField.style.display = '';
       openPanel();
     }else{
       panel.innerHTML = '';
       lvField.style.display = 'none';
+      sideField.style.display = 'none';
       hrsField.style.display = 'none';
       closePanel();
     }
@@ -989,7 +1091,8 @@ function setupPad(canvasId){
   let drawing=false, hasInk=false;
   function pos(e){ const rect=canvas.getBoundingClientRect(); const p=e.touches?e.touches[0]:e; return {x:p.clientX-rect.left, y:p.clientY-rect.top}; }
   function start(e){ e.preventDefault(); drawing=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
-  function move(e){ if(!drawing) return; e.preventDefault(); const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); hasInk=true; }
+  function move(e){ if(!drawing) return; e.preventDefault(); const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke();
+    if(!hasInk){ hasInk=true; canvas.dispatchEvent(new Event('signed')); } }
   function end(){ drawing=false; }
   canvas.addEventListener('mousedown', start);
   canvas.addEventListener('mousemove', move);
@@ -998,7 +1101,7 @@ function setupPad(canvasId){
   canvas.addEventListener('touchmove', move, {passive:false});
   canvas.addEventListener('touchend', end);
   canvas._hasInk = ()=>hasInk;
-  canvas._clear = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); hasInk=false; };
+  canvas._clear = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); hasInk=false; canvas.dispatchEvent(new Event('cleared')); };
   canvas._resize = resize;
   // returns a PNG data URL cropped tight around the ink
   canvas._trimmed = ()=>{
@@ -1026,6 +1129,16 @@ function setupPad(canvasId){
 }
 setupPad('padPatient');
 setupPad('padWitness');
+setupPad('padPhysician');
+// Date and time fill in automatically the moment each signature is written (cleared with the pad).
+[['padPatient','whenPatient'], ['padWitness','whenWitness'], ['padPhysician','whenPhysician']].forEach(([pad, when])=>{
+  const c = document.getElementById(pad), out = document.getElementById(when);
+  c.addEventListener('signed', ()=>{
+    const d = new Date();
+    out.textContent = `${pad2(d.getMonth()+1)}/${pad2(d.getDate())}/${d.getFullYear()}  ${formatTime(`${pad2(d.getHours())}:${pad2(d.getMinutes())}`)}`;
+  });
+  c.addEventListener('cleared', ()=>{ out.textContent = ''; });
+});
 setupPad('padInitials');
 
 document.getElementById('initCancel').addEventListener('click', closeInitialsModal);
@@ -1060,7 +1173,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '20';
+const FORM_VERSION = '21';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1080,6 +1193,10 @@ document.getElementById('patientDob').addEventListener('input', e=>{
   const d = parts.join('').slice(0,8);
   e.target.value = d.length > 4 ? `${d.slice(0,2)}/${d.slice(2,4)}/${d.slice(4)}`
                  : d.length > 2 ? `${d.slice(0,2)}/${d.slice(2)}` : d;
+});
+
+document.getElementById('surgeon').addEventListener('input', ()=>{
+  document.getElementById('sigPhysicianName').textContent = val('surgeon') || '—';
 });
 
 document.getElementById('patientName').addEventListener('input', ()=>{
@@ -1342,6 +1459,7 @@ function blankItems(){
   if(!document.getElementById('padPatient')._hasInk()) out.push('Patient signature');
   if(!document.getElementById('padWitness')._hasInk()) out.push('Witness signature');
   if(!val('witnessName')) out.push('Witness name');
+  if(!document.getElementById('padPhysician')._hasInk()) out.push('Physician signature');
   return out;
 }
 const blankModal = document.getElementById('blankModal');
