@@ -33,9 +33,9 @@ HIPAA compliance belongs to the clinic as a whole (risk analysis, policies, trai
 ```
  Exam-room iPad (passcode, MDM, iCloud off)
    SDM form (offline, in-memory only)
-     │ Print / Save PDF → "These items were left blank — continue?" (never blocks)
+     │ Save PDF → "These items were left blank — continue?" (never blocks)
      ▼
-   Print sheet → Share → Save to Files → On My iPad › SDM Export
+   Form builds the PDF itself (no web address / print stamps) → Share PDF… → AirDrop
      │                       PDF name: SDM_Lastname-Firstname_YYYY-MM-DD.pdf
      │ AirDrop (encrypted, peer-to-peer)
      ▼
@@ -95,8 +95,14 @@ HIPAA compliance belongs to the clinic as a whole (risk analysis, policies, trai
 1. ☐ Choose where to host the blank form (see `docs/IPAD_SETUP.md` §1) and publish the `app/` folder.
 2. ☐ Set up each iPad (`docs/IPAD_SETUP.md` §2) and the MDM restrictions (§3 above).
 3. ☐ Confirm the AdvancedMD document category for SDM forms with your AdvancedMD admin.
-4. ☐ Dry run on a real iPad with a test patient: fill in → Print / Save PDF → save PDF → AirDrop → upload → print from AdvancedMD → check both pages.
+4. ☐ Dry run on a real iPad with a test patient: fill in → Save PDF → Share PDF → AirDrop → upload → print from AdvancedMD → check both pages.
 5. ☐ Train staff with `docs/STAFF_SOP.md`, and update the Security Risk Analysis.
 6. ☐ Go live in one room, then the rest.
 
 **Open question for legal review:** the consent paragraph says "all blanks were filled in prior to my signature". Now that the form allows blanks, consider adjusting that wording, or have staff write "N/A" in fields left blank on purpose.
+
+---
+
+## v18: PDF built by the form
+
+iPad Safari's print added the web address, print date and a page counter to every page, and laid the form out differently (3–4 pages). Since v18 the form draws its own two-page letter PDF on the iPad (using the open-source html2canvas and jsPDF libraries stored in `app/vendor/`, which work offline and make no network requests). The PDF has the patient footer and "Page X of 2" on every page and nothing else. It stays in memory until shared through the iPad share sheet (AirDrop / Save to Files), and is gone when the form clears.

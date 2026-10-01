@@ -226,7 +226,7 @@
   .lv-pad button:active{ background:#C9D6F2; }
   body.pad-open .wrap{ padding-bottom:360px; }
 
-  .print-footer{ display:none; }
+
 
   .legal-note{ font-size:10.5px; color:var(--muted); margin-top:14px; }
 
@@ -237,52 +237,54 @@
     .fields.patient-row .field:first-child{ grid-column:1/-1; }
   }
 
-  /* ---------------- PRINT: fit two pages ---------------- */
+  /* ---------------- PDF layout: two letter pages ----------------
+     The form builds its own PDF (no browser print headers, web address or page stamps).
+     These rules are switched on with body.pdf-mode while the PDF is drawn.            */
+  body.pdf-mode{ background:#fff; --cell-w:40px; --cell-h:19px; --cell-gap:5px; }
+  .pdf-mode .progress, .pdf-mode .actions, .pdf-mode .add-proc, .pdf-mode .procedure-row button,
+  .pdf-mode .legal-note, .pdf-mode .lv-pad, .pdf-mode .annot-canvas, .pdf-mode .annot-bar,
+  .pdf-mode .proc-editor, .pdf-mode .init-reset, .pdf-mode .init-foot, .pdf-mode .modal,
+  .pdf-mode .sig-clear, .pdf-mode .pdf-hide{ display:none !important; }
+  .pdf-mode .wrap{ width:730px; max-width:none; margin:0; padding:0 0 4px !important; background:#fff; }
+  .pdf-mode header.top img{ height:40px; }
+  .pdf-mode header.top h1{ font-size:14px; }
+  .pdf-mode section{ margin-bottom:9px; padding-top:9px; }
+  .pdf-mode section.compact{ margin-bottom:6px; }
+  .pdf-mode h2{ font-size:10.5px; margin-bottom:3px; }
+  .pdf-mode .section-note{ font-size:9px; margin-bottom:4px; }
+  .pdf-mode .procedure-row{ border-bottom:none; padding-bottom:0; }
+  .pdf-mode .proc-summary{ font-size:9.5px; padding:1px 0 1px 8px; }
+  .pdf-mode .fields{ gap:4px 14px; }
+  .pdf-mode .fields.patient-row{ gap:2px 14px; }
+  .pdf-mode label.f-label{ font-size:8.5px; }
+  .pdf-mode .pdf-val{ font-size:10px; line-height:1.4; padding:3px 0; min-height:21px;
+    border-bottom:1px solid var(--line); color:var(--ink); white-space:pre-wrap; overflow-wrap:anywhere; }
+  .pdf-mode .pdf-val.pdf-area{ border:1px solid var(--line); padding:6px 8px; min-height:44px; }
+  .pdf-mode .item{ padding:4px 0; }
+  .pdf-mode .init-cell{ border-radius:3px; border-width:1px; }
+  .pdf-mode .init-head .h-cell{ font-size:7px; }
+  .pdf-mode .item .txt p{ font-size:9.3px; }
+  /* the PDF renderer draws text underlines through the letters; use a rule just below instead */
+  .pdf-mode .item .txt strong{ text-decoration:none; }
+  .pdf-mode .pdf-u{ border-bottom:1px solid currentColor; }
+  .pdf-mode .item .txt .sub{ margin-top:4px; padding-left:10px; }
+  .pdf-mode .item .txt .sub p{ font-size:9px; }
+  .pdf-mode #risksList .print-cols{ display:flex; gap:22px; align-items:flex-start; }
+  .pdf-mode #risksList .print-col{ flex:1 1 0; min-width:0; }
+  .pdf-mode canvas.sig-pad{ height:80px; }
+  .pdf-mode .sig-name{ font-size:9px; }
+
+  /* Last-resort fallback only (if the PDF builder ever fails): the browser's own print */
   @media print{
     @page{ size:letter; margin:0.45in; }
-    body{ background:#fff; }
-    .progress, .actions, .add-proc, .procedure-row button, .legal-note, .lv-pad, .annot-canvas{ display:none !important; }
-    .print-footer{
-      display:block; position:fixed; left:0; right:0; bottom:0;
-      font-size:8px; color:#444; border-top:0.5px solid #999; padding-top:2px; background:#fff;
-    }
-    .wrap{ padding-bottom:14px !important; }
-    h2, .init-head{ break-after:avoid; page-break-after:avoid; }
-    #altList, #guaranteesList{ break-inside:avoid; }
-    ::placeholder{ color:transparent !important; }
-    input::-webkit-calendar-picker-indicator{ display:none !important; }
-    .wrap{ max-width:100%; padding:0; }
-    header.top img{ height:40px; }
-    header.top h1{ font-size:14px; }
-    .intro{ font-size:9px; padding:0 0 6px; margin:0 0 10px; }
-    section{ margin-bottom:9px; padding-top:9px; }
-    section.compact{ margin-bottom:6px; }
-    h2{ font-size:10.5px; margin-bottom:3px; }
-    .section-note{ font-size:9px; margin-bottom:4px; }
-    .proc-editor{ display:none !important; }
-    .procedure-row{ border-bottom:none; padding-bottom:0; }
-    .proc-summary{ font-size:9.5px; padding:1px 0 1px 8px; }
-    .fields{ gap:4px 14px; }
-    .fields.patient-row{ gap:2px 14px; }
-    label.f-label{ font-size:8.5px; }
-    input[type=text], input[type=date], input[type=time], select, textarea{ font-size:10px; padding:3px 0; }
-    .item{ padding:4px 0; }
-    :root{ --cell-w:40px; --cell-h:19px; --cell-gap:5px; }
-    .init-cell{ border-radius:3px; border-width:1px; }
-    .init-head .h-cell{ font-size:7px; }
-    .init-reset, .init-foot{ display:none !important; }
-    .modal{ display:none !important; }
-    .item .txt p{ font-size:9.3px; }
-    .item .txt .sub{ margin-top:4px; padding-left:10px; }
-    .item .txt .sub p{ font-size:9px; }
-    #risksList .print-cols{ display:flex; gap:22px; align-items:flex-start; }
-    #risksList .print-col{ flex:1 1 0; min-width:0; }
-    #risksList .item{ break-inside:avoid; }
-    canvas.sig-pad{ height:60px; }
-    .sig-name{ font-size:9px; }
-    .init-cell{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    section.consent{ break-before:column; }
+    .pdf-mode .wrap{ width:auto; }
   }
+  .pdf-overlay{
+    position:fixed; inset:0; z-index:200; background:rgba(253,253,252,.97);
+    display:none; align-items:center; justify-content:center; flex-direction:column; gap:10px;
+    font-size:16px; font-weight:600; color:var(--brand);
+  }
+  .pdf-overlay.show{ display:flex; }
   /* iPad Safari centers the text in date/time boxes; keep it left-aligned like the other fields */
   input::-webkit-date-and-time-value{ text-align:left; }
 
@@ -306,7 +308,6 @@
     width:22px; height:22px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0;
   }
   .annot-swatch.sel{ border-color:var(--ink); }
-  @media print{ .annot-bar{ display:none !important; } }
 </style>
 </head>
 <body>
@@ -429,7 +430,7 @@
   </section>
 
   <div class="actions">
-    <button class="btn btn-primary" id="printBtn" type="button">Print / Save PDF</button>
+    <button class="btn btn-primary" id="printBtn" type="button">Save PDF</button>
   </div>
   <div class="actions">
     <button class="btn btn-danger" id="newPatientBtn" type="button">New Patient (clear form)</button>
@@ -451,11 +452,14 @@
   <!-- Shown after the print / PDF sheet closes -->
   <div class="modal" id="afterModal" role="dialog" aria-modal="true" aria-labelledby="afterTitle">
     <div class="modal-card">
-      <h3 id="afterTitle">PDF saved?</h3>
-      <p class="hint">Once the PDF is saved to <b>On My iPad › SDM Export</b> (or AirDropped), clear the form so no patient information stays on this iPad.</p>
+      <h3 id="afterTitle">PDF ready</h3>
+      <p class="hint"><b id="pdfName"></b><br>Tap <b>Share</b>, then choose <b>AirDrop</b> (front-desk Mac) or <b>Save to Files</b> (On My iPad › SDM Export). When it's sent, clear the form so no patient information stays on this iPad.</p>
       <div class="actions">
-        <button class="btn btn-ghost" id="afterKeep" type="button">Keep form open</button>
-        <button class="btn btn-primary" id="afterClear" type="button">Clear for next patient</button>
+        <button class="btn btn-primary" id="pdfShare" type="button">Share PDF…</button>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="afterKeep" type="button">Back to form</button>
+        <button class="btn btn-ghost" id="afterClear" type="button">Clear for next patient</button>
       </div>
     </div>
   </div>
@@ -522,13 +526,16 @@
     </div>
   </div>
 
-  <div class="legal-note">This on-screen form mirrors the clinic's paper Shared Decision Making document. Nothing entered here is saved or sent anywhere. Use “Print / Save PDF” → Share → Save to Files (On My iPad › SDM Export), AirDrop the PDF to the front desk for upload to AdvancedMD, then tap “New Patient”. <span id="versionNote"></span></div>
+  <div class="legal-note">This on-screen form mirrors the clinic's paper Shared Decision Making document. Nothing entered here is saved or sent anywhere. Tap “Save PDF” → Share → AirDrop to the front desk (or Save to Files), then “Clear for next patient”. <span id="versionNote"></span></div>
 
-  <!-- Repeats at the bottom of every printed page so a separated page can be identified -->
-  <div class="print-footer" id="printFooter"></div>
 
 </div>
 
+<div class="pdf-overlay" id="pdfOverlay">Creating PDF…</div>
+
+<!-- PDF builders (open source, stored with the form; they work offline and send nothing) -->
+<script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
 <script>
 /* ---------- Procedure builder ----------
    Each general procedure carries its own add-on list. `lv:true` means the add-on
@@ -1074,7 +1081,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '17';
+const FORM_VERSION = '18';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1146,7 +1153,7 @@ function printFooterText(){
   ];
   return parts.join('   ·   ');
 }
-// Safari names the PDF after the page title: SDM_Lastname-Firstname_2026-10-01
+// PDF file name: SDM_Lastname-Firstname_2026-10-01
 function pdfTitle(){
   const name = val('patientName');
   let who = 'Patient';
@@ -1158,26 +1165,161 @@ function pdfTitle(){
   who = who.replace(/[^A-Za-z0-9-]/g, '');
   return `SDM_${who || 'Patient'}_${val('formDate') || localDate(new Date())}`;
 }
-const ORIGINAL_TITLE = document.title;
-let printedOnce = false;
-window.addEventListener('beforeprint', ()=>{
-  document.getElementById('printFooter').textContent = printFooterText();
-  document.title = pdfTitle();
-});
-window.addEventListener('afterprint', ()=>{
-  document.title = ORIGINAL_TITLE;
-  if(printedOnce) setTimeout(()=>document.getElementById('afterModal').classList.add('show'), 300);
-});
-function doPrint(){
-  document.getElementById('printFooter').textContent = printFooterText();
-  document.title = pdfTitle();
-  printedOnce = true;
-  window.print();
+/* ---------- Build the PDF on the iPad ----------
+   The form draws its own two-page letter PDF, so it carries no browser print stamps
+   (web address, print date, page counter). Nothing leaves the iPad: the PDF lives only
+   in memory until it is shared (AirDrop / Save to Files) and is gone when the form clears. */
+const PAGE = { w:612, h:792, margin:32.4 };                    // letter, points; 0.45 in margins
+const LAYOUT_W = 730;                                          // CSS px width of .wrap in pdf-mode
+const PT_PER_PX = (PAGE.w - 2*PAGE.margin) / LAYOUT_W;
+const FOOTER_PT = 20;
+const PAGE_PX = Math.floor((PAGE.h - 2*PAGE.margin - FOOTER_PT) / PT_PER_PX);
+let pdfFile = null;
+
+function formatTime(v){
+  const m = /^(\d{1,2}):(\d{2})/.exec(v); if(!m) return v;
+  const h = +m[1]; return `${(h % 12) || 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'}`;
 }
+// Swap every visible form box for plain text so the PDF shows exactly what was entered.
+function freezeControls(root){
+  const made = [];
+  root.querySelectorAll('input[type=text], input[type=date], input[type=time], select, textarea').forEach(el=>{
+    if(el.offsetParent === null) return;               // hidden (e.g. the procedure editor)
+    let v = el.tagName === 'SELECT' ? (el.value ? el.options[el.selectedIndex].text : '') : el.value;
+    if(el.type === 'date') v = usDate(v);
+    if(el.type === 'time') v = formatTime(v);
+    const d = document.createElement('div');
+    d.className = 'pdf-val' + (el.tagName === 'TEXTAREA' ? ' pdf-area' : '');
+    d.textContent = v;
+    el.after(d); el.classList.add('pdf-hide');
+    made.push([el, d]);
+  });
+  // Underlined headings: one underlined box per word, so wrapped headings underline correctly
+  const headings = [...root.querySelectorAll('.item .txt strong')].map(st=>{
+    const html = st.innerHTML;
+    const words = st.textContent.split(' ');
+    st.textContent = '';
+    words.forEach((w, n)=>{
+      const sp = document.createElement('span');
+      sp.className = 'pdf-u';
+      sp.textContent = n < words.length - 1 ? w + ' ' : w;
+      st.appendChild(sp);
+    });
+    return [st, html];
+  });
+  return ()=>{
+    made.forEach(([el, d])=>{ d.remove(); el.classList.remove('pdf-hide'); });
+    headings.forEach(([st, html])=>{ st.innerHTML = html; });
+  };
+}
+// Page breaks only where nothing would be cut: between sections or between items,
+// never through an item, and never right after a section heading.
+function pageBreaks(root){
+  const top0 = root.getBoundingClientRect().top;
+  const rel = r=>[r.top - top0, r.bottom - top0];
+  const total = Math.ceil(root.getBoundingClientRect().height);
+  const atoms = [...root.querySelectorAll('.item, header.top, .fields, .procedure-row, .consent')]
+    .filter(el=>el.offsetParent !== null).map(el=>rel(el.getBoundingClientRect()));
+  root.querySelectorAll('section').forEach(sec=>{          // keep each heading with its first item
+    const first = sec.querySelector('.item') || sec.querySelector('h2 ~ *');
+    if(first) atoms.push([rel(sec.getBoundingClientRect())[0], rel(first.getBoundingClientRect())[1]]);
+  });
+  const cands = [...root.querySelectorAll('section, .item')]
+    .filter(el=>el.offsetParent !== null).map(el=>Math.floor(rel(el.getBoundingClientRect())[0]));
+  const ok = y=>!atoms.some(([t, b])=>t < y - 1 && b > y + 1);
+  const pages = []; let start = 0;
+  while(total - start > PAGE_PX){
+    const fits = cands.filter(c=>c > start + 40 && c <= start + PAGE_PX && ok(c));
+    const end = fits.length ? Math.max(...fits) : start + PAGE_PX;
+    pages.push([start, end]); start = end;
+  }
+  pages.push([start, total]);
+  return pages;
+}
+async function buildPdf(){
+  const wrap = document.querySelector('.wrap');
+  const y0 = window.scrollY;
+  if(document.activeElement) document.activeElement.blur();
+  document.body.classList.remove('pad-open');
+  document.body.classList.add('pdf-mode');
+  const restore = freezeControls(wrap);
+  window.scrollTo(0, 0);
+  try{
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const pages = pageBreaks(wrap);
+    const height = Math.ceil(wrap.getBoundingClientRect().height);
+    const scale = Math.min(3, Math.sqrt(14e6 / (LAYOUT_W * height)));   // stay under iPad canvas limits
+    const shot = await html2canvas(wrap, {
+      scale, backgroundColor:'#ffffff', logging:false,
+      windowWidth: Math.max(document.documentElement.clientWidth, LAYOUT_W + 40),
+      ignoreElements: el=>el.id === 'pdfOverlay'
+    });
+    const k = shot.width / LAYOUT_W;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit:'pt', format:'letter', compress:true });
+    pdf.setProperties({ title: pdfTitle(), subject:'Shared Decision Making', creator:'Hey Clinic', author:'Hey Clinic' });
+    const footer = printFooterText();
+    pages.forEach(([a, b], n)=>{
+      if(n) pdf.addPage();
+      const slice = document.createElement('canvas');
+      slice.width = shot.width; slice.height = Math.round((b - a) * k);
+      const ctx = slice.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, slice.width, slice.height);
+      ctx.drawImage(shot, 0, Math.round(a * k), shot.width, slice.height, 0, 0, shot.width, slice.height);
+      pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG',
+                   PAGE.margin, PAGE.margin, LAYOUT_W * PT_PER_PX, (b - a) * PT_PER_PX);
+      const fy = PAGE.h - PAGE.margin + 4;
+      pdf.setDrawColor(170); pdf.setLineWidth(0.4);
+      pdf.line(PAGE.margin, fy - 9, PAGE.w - PAGE.margin, fy - 9);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(80);
+      pdf.text(footer.replace(/—/g, '-').replace(/·/g, '|'), PAGE.margin, fy);
+      pdf.text(`Page ${n + 1} of ${pages.length}`, PAGE.w - PAGE.margin, fy, { align:'right' });
+    });
+    return new File([pdf.output('blob')], pdfTitle() + '.pdf', { type:'application/pdf' });
+  } finally {
+    restore();
+    document.body.classList.remove('pdf-mode');
+    window.scrollTo(0, y0);
+  }
+}
+async function savePdf(){
+  const overlay = document.getElementById('pdfOverlay');
+  overlay.classList.add('show');
+  try{
+    pdfFile = await buildPdf();
+  }catch(err){
+    overlay.classList.remove('show');
+    alert('Could not create the PDF (' + (err && err.message || err) + '). The iPad print screen will open instead.');
+    document.body.classList.add('pdf-mode');
+    window.print();
+    document.body.classList.remove('pdf-mode');
+    return;
+  }
+  overlay.classList.remove('show');
+  document.getElementById('pdfName').textContent = pdfFile.name;
+  document.getElementById('afterModal').classList.add('show');
+}
+function downloadPdf(){
+  const url = URL.createObjectURL(pdfFile);
+  const a = document.createElement('a');
+  a.href = url; a.download = pdfFile.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 60000);
+}
+// The share sheet needs its own tap, so it opens from the "PDF ready" box.
+document.getElementById('pdfShare').addEventListener('click', async ()=>{
+  if(!pdfFile) return;
+  if(navigator.canShare && navigator.canShare({ files:[pdfFile] })){
+    try{ await navigator.share({ files:[pdfFile] }); }
+    catch(err){ if(err.name !== 'AbortError') downloadPdf(); }
+  }else{
+    downloadPdf();
+  }
+});
 document.getElementById('afterKeep').addEventListener('click', ()=>document.getElementById('afterModal').classList.remove('show'));
 document.getElementById('afterClear').addEventListener('click', wipeForm);
 
-/* ---------- Print / Save PDF: list anything left blank, but never block ---------- */
+/* ---------- Save PDF: list anything left blank, but never block ---------- */
 function blankItems(){
   const out = [];
   if(!val('patientName')) out.push('Patient name');
@@ -1206,7 +1348,7 @@ function blankItems(){
 const blankModal = document.getElementById('blankModal');
 document.getElementById('printBtn').addEventListener('click', ()=>{
   const blanks = blankItems();
-  if(!blanks.length){ doPrint(); return; }
+  if(!blanks.length){ savePdf(); return; }
   const list = document.getElementById('blankList');
   list.innerHTML = '';
   blanks.forEach(b=>{ const li = document.createElement('li'); li.textContent = b; list.appendChild(li); });
@@ -1215,7 +1357,7 @@ document.getElementById('printBtn').addEventListener('click', ()=>{
 document.getElementById('blankBack').addEventListener('click', ()=>blankModal.classList.remove('show'));
 document.getElementById('blankContinue').addEventListener('click', ()=>{
   blankModal.classList.remove('show');
-  setTimeout(doPrint, 50);
+  setTimeout(savePdf, 50);
 });
 
 /* ---------- Quick keypads ----------

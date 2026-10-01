@@ -10,15 +10,14 @@
 5. Patient and witness sign. Print the witness name.
 
 **Finishing**
-6. Tap **Print / Save PDF**. If anything is blank, a list appears: tap **Go back** to fix it, or **Continue**.
-7. In the print screen, tap **Share (⬆) → Save to Files → On My iPad › SDM Export → Save**.
-8. Open **Files › SDM Export**, long-press the PDF and choose **Share → AirDrop → front-desk Mac**.
-9. Back in the form, tap **Clear for next patient**. (Or **New Patient** at the bottom at any time.)
+6. Tap **Save PDF**. If anything is blank, a list appears: tap **Go back** to fix it, or **Continue**.
+7. When **PDF ready** appears, tap **Share PDF…** → **AirDrop** → the front-desk Mac. (Or **Save to Files → On My iPad › SDM Export** to send later.)
+8. Tap **Clear for next patient**. (Or **New Patient** at the bottom at any time.)
 
 **Front desk**
-10. On the Mac, upload the PDF from **Downloads** to the patient's chart in AdvancedMD. Match the name, **DOB and chart #** on the PDF footer.
-11. Delete the PDF from Downloads, and empty the Trash.
-12. Let the room know it's uploaded. They delete the PDF from **Files › SDM Export** on the iPad.
+9. On the Mac, upload the PDF from **Downloads** to the patient's chart in AdvancedMD. Match the name, **DOB and chart #** on the PDF footer.
+10. Delete the PDF from Downloads, and empty the Trash.
+11. If the PDF was saved to Files on the iPad instead of AirDropped, delete it from **Files › SDM Export** once it's uploaded.
 
 **End of day:** check that *SDM Export* on every iPad and *Downloads* on the Mac are empty.
 
