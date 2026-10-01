@@ -5,7 +5,7 @@
 
 **During the consult**
 2. Fill in the patient name, DOB, chart #, and family/friends present.
-3. Choose the procedure, then tap **Levels** to use the big keypad. Tap **ABC keyboard** for normal typing.
+3. Choose the procedure. Levels, Estimated time, DOB and Chart # open a big keypad; tap **ABC keyboard** on it for the normal iPad keyboard.
 4. Go through each section. Patient and witness initial each box, or tap **Initial all** under a column.
 5. Patient and witness sign. Print the witness name.
 

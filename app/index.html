@@ -24,6 +24,8 @@
     --risk:#00339D;
   }
   *{box-sizing:border-box;}
+  /* iPad Safari otherwise enlarges small text when printing (it pushed the PDF to 3 pages) */
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body{
     margin:0; padding:0; background:var(--bg); color:var(--ink);
     overflow-x:hidden;
@@ -210,8 +212,7 @@
     box-shadow:0 -6px 20px rgba(0,0,0,.12); user-select:none; -webkit-user-select:none;
   }
   .lv-pad.show{ display:block; }
-  .lv-pad[data-mode="hours"] .kp-levels-only,
-  .lv-pad:not([data-mode="hours"]) .kp-hours-only{ display:none; }
+  .lv-pad [hidden]{ display:none !important; }
   .lv-row{ display:flex; gap:8px; max-width:640px; margin:0 auto 8px; }
   .lv-row:last-child{ margin-bottom:0; }
   .lv-pad button{
@@ -274,17 +275,13 @@
     .item .txt p{ font-size:9.3px; }
     .item .txt .sub{ margin-top:4px; padding-left:10px; }
     .item .txt .sub p{ font-size:9px; }
-    #risksList{ column-count:2; column-gap:22px; }
+    #risksList .print-cols{ display:flex; gap:22px; align-items:flex-start; }
+    #risksList .print-col{ flex:1 1 0; min-width:0; }
     #risksList .item{ break-inside:avoid; }
     canvas.sig-pad{ height:60px; }
     .sig-name{ font-size:9px; }
     .init-cell{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     section.consent{ break-before:column; }
-  }
-  /* iPad Safari prints about 20% larger than other browsers, which pushed the form to 3 pages.
-     -webkit-touch-callout is only supported by iPhone/iPad Safari, so this only affects iPad printing. */
-  @supports (-webkit-touch-callout: none){
-    @media print{ .wrap{ zoom:0.82; } }
   }
   /* iPad Safari centers the text in date/time boxes; keep it left-aligned like the other fields */
   input::-webkit-date-and-time-value{ text-align:left; }
@@ -347,11 +344,11 @@
       </div>
       <div class="field">
         <label class="f-label" for="patientDob">Date of birth</label>
-        <input type="text" id="patientDob" placeholder="MM/DD/YYYY" inputmode="numeric" maxlength="10" autocomplete="off" autocorrect="off" spellcheck="false">
+        <input type="text" id="patientDob" class="lv-input" data-kp="date" placeholder="MM/DD/YYYY" inputmode="none" maxlength="10" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
       <div class="field">
         <label class="f-label" for="chartNo">Chart # (AdvancedMD)</label>
-        <input type="text" id="chartNo" placeholder="Chart / MRN" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <input type="text" id="chartNo" class="lv-input" data-kp="digits" placeholder="Chart / MRN" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       </div>
       <div class="field">
         <label class="f-label" for="surgeon">Surgeon</label>
@@ -476,33 +473,33 @@
 
   <!-- Quick-entry keypad for spinal levels -->
   <div class="lv-pad" id="lvPad" aria-hidden="true">
-    <div class="lv-row kp-levels-only">
-      <button type="button" data-k="C">C</button>
-      <button type="button" data-k="T">T</button>
-      <button type="button" data-k="L">L</button>
-      <button type="button" data-k="iliac wing" class="wide">Iliac Wing</button>
+    <div class="lv-row">
+      <button type="button" data-modes="levels" data-k="C">C</button>
+      <button type="button" data-modes="levels" data-k="T">T</button>
+      <button type="button" data-modes="levels" data-k="L">L</button>
+      <button type="button" data-modes="levels" data-k="iliac wing" class="wide">Iliac Wing</button>
     </div>
     <div class="lv-row">
-      <button type="button" data-k="1">1</button>
-      <button type="button" data-k="2">2</button>
-      <button type="button" data-k="3">3</button>
-      <button type="button" data-k="4">4</button>
-      <button type="button" data-k="5">5</button>
+      <button type="button" data-modes="levels hours date digits" data-k="1">1</button>
+      <button type="button" data-modes="levels hours date digits" data-k="2">2</button>
+      <button type="button" data-modes="levels hours date digits" data-k="3">3</button>
+      <button type="button" data-modes="levels hours date digits" data-k="4">4</button>
+      <button type="button" data-modes="levels hours date digits" data-k="5">5</button>
     </div>
     <div class="lv-row">
-      <button type="button" data-k="6">6</button>
-      <button type="button" data-k="7">7</button>
-      <button type="button" data-k="8">8</button>
-      <button type="button" data-k="9">9</button>
-      <button type="button" data-k="0">0</button>
+      <button type="button" data-modes="levels hours date digits" data-k="6">6</button>
+      <button type="button" data-modes="levels hours date digits" data-k="7">7</button>
+      <button type="button" data-modes="levels hours date digits" data-k="8">8</button>
+      <button type="button" data-modes="levels hours date digits" data-k="9">9</button>
+      <button type="button" data-modes="levels hours date digits" data-k="0">0</button>
     </div>
     <div class="lv-row">
-      <button type="button" data-k="-">–</button>
-      <button type="button" data-k="/">/</button>
-      <button type="button" data-k=",">,</button>
-      <button type="button" data-k="." class="kp-hours-only">.</button>
-      <button type="button" data-k=" " class="wide">space</button>
-      <button type="button" data-act="back" class="act" aria-label="Delete">⌫</button>
+      <button type="button" data-modes="levels hours" data-k="-">–</button>
+      <button type="button" data-modes="levels hours date" data-k="/">/</button>
+      <button type="button" data-modes="levels hours" data-k=",">,</button>
+      <button type="button" data-modes="hours" data-k=".">.</button>
+      <button type="button" data-modes="levels hours" data-k=" " class="wide">space</button>
+      <button type="button" data-modes="levels hours date digits" data-act="back" class="act" aria-label="Delete">⌫</button>
     </div>
     <div class="lv-row">
       <button type="button" data-act="abc" class="act wide">ABC keyboard</button>
@@ -724,6 +721,25 @@ function renderList(containerId, data, sectionKey, riskStyle){
   foot.innerHTML = INITIAL_COLUMNS.map(c=>`
     <button class="init-all" type="button" data-col="${c.key}" data-section="${containerId}">Initial all</button>`).join('');
   container.appendChild(foot);
+}
+
+/* Put a list's items into two side-by-side columns for printing (stacked as usual on screen).
+   Done with plain boxes rather than CSS multi-column, which iPad Safari ignored when printing. */
+function splitIntoPrintColumns(containerId){
+  const container = document.getElementById(containerId);
+  const items = [...container.querySelectorAll(':scope > .item')];
+  const total = items.reduce((n, el)=>n + el.textContent.length, 0);
+  const cols = document.createElement('div');
+  cols.className = 'print-cols';
+  const left = document.createElement('div'), right = document.createElement('div');
+  left.className = right.className = 'print-col';
+  let used = 0;
+  items.forEach(el=>{
+    (used < total / 2 ? left : right).appendChild(el);
+    used += el.textContent.length;
+  });
+  cols.append(left, right);
+  container.insertBefore(cols, container.firstChild);
 }
 
 /* ---- initials cells ---- */
@@ -1049,6 +1065,7 @@ document.querySelectorAll('.sig-clear').forEach(btn=>{
 
 renderList('benefitsList', BENEFITS, 'benefit', false);
 renderList('risksList', RISKS, 'risk', true);
+splitIntoPrintColumns('risksList');
 renderList('altList', ALTERNATIVES, 'alt', false);
 renderList('guaranteesList', GUARANTEES, 'guarantee', false);
 renderList('additionalList', ADDITIONAL, 'additional', false);
@@ -1057,7 +1074,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '16';
+const FORM_VERSION = '17';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1201,16 +1218,24 @@ document.getElementById('blankContinue').addEventListener('click', ()=>{
   setTimeout(doPrint, 50);
 });
 
-/* ---------- Levels keypad ----------
-   Levels boxes open a large C / T / L / Iliac Wing / number pad instead of the iPad keyboard.
-   "ABC keyboard" switches that box to the normal keyboard until you leave it.       */
+/* ---------- Quick keypads ----------
+   Levels, estimated time, date of birth and chart # open a large on-screen keypad instead of
+   the iPad keyboard. Each box shows only the keys it needs (data-kp = levels | hours | date | digits).
+   "ABC keyboard" switches that box to the normal iPad keyboard until you leave it.            */
 (function(){
   const pad = document.getElementById('lvPad');
   let target = null;
+  let switching = false;               // true while handing a box over to the iPad keyboard
 
   function show(input){
     target = input;
-    pad.dataset.mode = input.dataset.kp || 'levels';
+    const mode = input.dataset.kp || 'levels';
+    pad.querySelectorAll('button[data-modes]').forEach(b=>{
+      b.hidden = !b.dataset.modes.split(' ').includes(mode);
+    });
+    pad.querySelectorAll('.lv-row').forEach(row=>{
+      row.hidden = ![...row.children].some(b=>!b.hidden);
+    });
     pad.classList.add('show');
     document.body.classList.add('pad-open');
     const r = input.getBoundingClientRect();
@@ -1223,12 +1248,15 @@ document.getElementById('blankContinue').addEventListener('click', ()=>{
     document.body.classList.remove('pad-open');
     target = null;
   }
+  function changed(el, inputType){
+    el.dispatchEvent(new InputEvent('input', {bubbles:true, inputType}));
+  }
   function insert(text){
     const el = target; if(!el) return;
     const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? el.value.length;
     el.value = el.value.slice(0,a) + text + el.value.slice(b);
     el.setSelectionRange(a + text.length, a + text.length);
-    el.dispatchEvent(new Event('input', {bubbles:true}));
+    changed(el, 'insertText');
   }
   function backspace(){
     const el = target; if(!el) return;
@@ -1240,7 +1268,32 @@ document.getElementById('blankContinue').addEventListener('click', ()=>{
     }
     el.value = el.value.slice(0,a) + el.value.slice(b);
     el.setSelectionRange(a, a);
-    el.dispatchEvent(new Event('input', {bubbles:true}));
+    changed(el, 'deleteContentBackward');
+  }
+
+  /* Bring up the normal iPad keyboard for `el`.
+     iPadOS only opens its keyboard when a text box is focused during the tap itself, so a
+     hidden helper box is focused first (inside the tap) and focus is then moved to the real
+     box; the keyboard stays open as focus moves between text boxes.                        */
+  function useIpadKeyboard(el){
+    switching = true;
+    el.dataset.native = '1';
+    el.setAttribute('inputmode', 'text');
+    hide();
+    const r = el.getBoundingClientRect();
+    const helper = document.createElement('input');
+    helper.type = 'text';
+    helper.setAttribute('aria-hidden', 'true');
+    helper.style.cssText = `position:fixed; top:${Math.max(0, r.top)}px; left:${Math.max(0, r.left)}px;
+      width:1px; height:1px; opacity:0; font-size:16px; border:0; padding:0;`;
+    document.body.appendChild(helper);
+    helper.focus();
+    setTimeout(()=>{
+      el.focus();
+      const end = el.value.length; try{ el.setSelectionRange(end, end); }catch(_){}
+      helper.remove();
+      switching = false;
+    }, 60);
   }
 
   document.addEventListener('focusin', e=>{
@@ -1249,7 +1302,8 @@ document.getElementById('blankContinue').addEventListener('click', ()=>{
   });
   document.addEventListener('focusout', e=>{
     const el = e.target;
-    if(!(el.matches && el.matches('input.lv-input'))) return;
+    if(switching || !(el.matches && el.matches('input.lv-input'))) return;
+    // leaving the box: next time it opens with the quick keypad again
     delete el.dataset.native;
     el.setAttribute('inputmode','none');
     setTimeout(()=>{
@@ -1258,7 +1312,7 @@ document.getElementById('blankContinue').addEventListener('click', ()=>{
     }, 0);
   });
 
-  // keep focus (and the caret) in the levels box while tapping keys
+  // keep focus (and the caret) in the box while tapping keys
   pad.addEventListener('pointerdown', e=>e.preventDefault());
   pad.addEventListener('mousedown', e=>e.preventDefault());
   pad.addEventListener('click', e=>{
@@ -1268,14 +1322,7 @@ document.getElementById('blankContinue').addEventListener('click', ()=>{
     if(k !== null){ insert(k); return; }
     if(act === 'back'){ backspace(); return; }
     if(act === 'done'){ const el = target; hide(); el.blur(); return; }
-    if(act === 'abc'){
-      const el = target;
-      el.blur();                         // resets to keypad mode, so switch after
-      el.setAttribute('inputmode','text');
-      el.dataset.native = '1';
-      hide();
-      el.focus();
-    }
+    if(act === 'abc'){ useIpadKeyboard(target); }
   });
 })();
 
