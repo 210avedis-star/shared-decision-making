@@ -270,8 +270,6 @@
   .pdf-mode .pdf-u{ border-bottom:1px solid currentColor; }
   .pdf-mode .item .txt .sub{ margin-top:4px; padding-left:10px; }
   .pdf-mode .item .txt .sub p{ font-size:9px; }
-  .pdf-mode #risksList .print-cols{ display:flex; gap:22px; align-items:flex-start; }
-  .pdf-mode #risksList .print-col{ flex:1 1 0; min-width:0; }
   .pdf-mode canvas.sig-pad{ height:80px; }
   .pdf-mode .sig-name{ font-size:9px; }
 
@@ -731,25 +729,6 @@ function renderList(containerId, data, sectionKey, riskStyle){
   container.appendChild(foot);
 }
 
-/* Put a list's items into two side-by-side columns for printing (stacked as usual on screen).
-   Done with plain boxes rather than CSS multi-column, which iPad Safari ignored when printing. */
-function splitIntoPrintColumns(containerId){
-  const container = document.getElementById(containerId);
-  const items = [...container.querySelectorAll(':scope > .item')];
-  const total = items.reduce((n, el)=>n + el.textContent.length, 0);
-  const cols = document.createElement('div');
-  cols.className = 'print-cols';
-  const left = document.createElement('div'), right = document.createElement('div');
-  left.className = right.className = 'print-col';
-  let used = 0;
-  items.forEach(el=>{
-    (used < total / 2 ? left : right).appendChild(el);
-    used += el.textContent.length;
-  });
-  cols.append(left, right);
-  container.insertBefore(cols, container.firstChild);
-}
-
 /* ---- initials cells ---- */
 function stampCell(cell, dataUrl){
   cell.innerHTML = `<img src="${dataUrl}" alt="initials">`;
@@ -1073,7 +1052,6 @@ document.querySelectorAll('.sig-clear').forEach(btn=>{
 
 renderList('benefitsList', BENEFITS, 'benefit', false);
 renderList('risksList', RISKS, 'risk', true);
-splitIntoPrintColumns('risksList');
 renderList('altList', ALTERNATIVES, 'alt', false);
 renderList('guaranteesList', GUARANTEES, 'guarantee', false);
 renderList('additionalList', ADDITIONAL, 'additional', false);
@@ -1082,7 +1060,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '19';
+const FORM_VERSION = '20';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1302,6 +1280,22 @@ async function savePdf(){
   }
   overlay.classList.remove('show');
   document.getElementById('pdfName').textContent = pdfFile.name;
+  if(navigator.canShare && navigator.canShare({ files:[pdfFile] })){
+    try{
+      await navigator.share({ files:[pdfFile] });     // AirDrop / Save to Files / Print
+      document.getElementById('afterTitle').textContent = 'PDF sent';
+      document.getElementById('afterModal').classList.add('show');
+      return;
+    }catch(err){
+      if(err.name === 'AbortError'){                   // share sheet closed without sending
+        document.getElementById('afterTitle').textContent = 'PDF ready';
+        document.getElementById('afterModal').classList.add('show');
+        return;
+      }
+      // NotAllowedError: the iPad wants a fresh tap, so offer the Share button below
+    }
+  }
+  document.getElementById('afterTitle').textContent = 'PDF ready';
   document.getElementById('afterModal').classList.add('show');
 }
 function downloadPdf(){

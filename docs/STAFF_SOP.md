@@ -11,7 +11,7 @@
 
 **Finishing**
 6. Tap **Save PDF**. If anything is blank, a list appears: tap **Go back** to fix it, or **Continue**.
-7. When **PDF ready** appears, tap **Share PDF…** → **AirDrop** → the front-desk Mac. (Or **Save to Files → On My iPad › SDM Export** to send later.)
+7. The iPad share sheet opens: tap **AirDrop** → the front-desk Mac. (Or **Save to Files → On My iPad › SDM Export** to send later.) If a small "PDF ready" box shows instead, tap **Share PDF…**.
 8. Tap **Clear for next patient**. (Or **New Patient** at the bottom at any time.)
 
 **Front desk**
