@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- Zero-transmission policy: the browser refuses any attempt by this page to send data anywhere. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SDM Form">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Hey Clinic — Shared Decision Making</title>
 <style>
   :root{
@@ -49,7 +58,7 @@
   .section-note{ font-size:11px; color:var(--muted); margin:0 0 10px; }
 
   .fields{ display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
-  .fields.patient-row{ grid-template-columns:1.3fr 1.1fr 0.85fr 0.85fr; gap:0 14px; }
+  .fields.patient-row{ grid-template-columns:1.5fr 1fr 1fr; gap:10px 14px; }
   .field{ display:flex; flex-direction:column; gap:1px; }
   .field.full{ grid-column:1/-1; }
   label.f-label{ font-size:11px; color:var(--muted); font-weight:600; }
@@ -94,6 +103,15 @@
     font-size:10px; font-weight:700; color:var(--muted);
     text-transform:uppercase; letter-spacing:.03em;
   }
+  .init-foot{
+    display:flex; justify-content:flex-end; gap:var(--cell-gap); margin-top:2px;
+  }
+  .init-all{
+    width:var(--cell-w); border:1px solid var(--brand-light); background:#fff; color:var(--brand);
+    border-radius:5px; padding:5px 0; font-size:10px; font-weight:700; line-height:1.15;
+    cursor:pointer; font-family:inherit;
+  }
+  .init-all:active{ background:#F5F8FF; }
   .init-reset{
     display:block; width:100%; margin-top:2px; border:none; background:transparent;
     font-size:9px; color:var(--brand-light); cursor:pointer; padding:0;
@@ -131,7 +149,11 @@
   .proc-editor{ display:flex; flex-direction:column; gap:6px; }
   .proc-inline{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
   .proc-inline .field{ flex:1 1 140px; min-width:0; }
-  .proc-inline .hrs-field{ flex:1 1 110px; }
+  .proc-inline .hrs-field{ flex:1 1 150px; }
+  .unit-wrap{ display:flex; align-items:baseline; gap:6px; border-bottom:1px solid var(--line); }
+  .unit-wrap:focus-within{ border-bottom-color:var(--brand); }
+  .unit-wrap input[type=text]{ flex:1; min-width:0; border-bottom:none; }
+  .unit-wrap .unit{ font-size:13px; color:var(--muted); font-weight:600; }
   .addon-panel{
     display:none; border:1px solid var(--line); border-radius:8px;
     padding:10px 12px; background:#fff;
@@ -174,22 +196,55 @@
   .btn-primary{ background:var(--brand); color:#fff; }
   .btn-primary:disabled{ background:#C9CFC9; cursor:not-allowed; }
   .btn-ghost{ background:transparent; border:1px solid var(--brand-light); color:var(--brand); }
+  .btn-danger{ background:transparent; border:1px solid #D9A3A3; color:#9B2C2C; flex:0 1 auto; margin-left:auto; padding:10px 16px; font-size:13px; }
+  .blank-list{ margin:6px 0 4px; padding-left:20px; font-size:13px; max-height:45vh; overflow:auto; }
+  .blank-list li{ margin:2px 0; }
 
-  .warn{ font-size:12px; color:var(--risk); margin-top:8px; display:none; }
-  .warn.show{ display:block; }
+  /* ----- levels keypad ----- */
+  .lv-pad{
+    position:fixed; left:0; right:0; bottom:0; z-index:80; display:none;
+    background:#E9EDF5; border-top:1px solid #C9D2E3; padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+    box-shadow:0 -6px 20px rgba(0,0,0,.12); user-select:none; -webkit-user-select:none;
+  }
+  .lv-pad.show{ display:block; }
+  .lv-row{ display:flex; gap:8px; max-width:640px; margin:0 auto 8px; }
+  .lv-row:last-child{ margin-bottom:0; }
+  .lv-pad button{
+    flex:1 1 0; min-height:54px; border:none; border-radius:9px; background:#fff;
+    font-size:22px; font-weight:600; color:var(--ink); font-family:inherit; cursor:pointer;
+    box-shadow:0 1px 0 rgba(0,0,0,.18); touch-action:manipulation;
+  }
+  .lv-pad button.wide{ flex:2 1 0; font-size:18px; }
+  .lv-pad button.act{ background:#D3DAE8; font-size:16px; }
+  .lv-pad button.done{ background:var(--brand); color:#fff; font-size:18px; }
+  .lv-pad button:active{ background:#C9D6F2; }
+  body.pad-open .wrap{ padding-bottom:360px; }
+
+  .print-footer{ display:none; }
+
   .legal-note{ font-size:10.5px; color:var(--muted); margin-top:14px; }
 
   @media (max-width:480px){
     :root{ --cell-w:48px; --cell-h:28px; --cell-gap:6px; }
     .fields{ grid-template-columns:1fr; }
     .fields.patient-row{ grid-template-columns:1fr 1fr; gap:8px 14px; }
+    .fields.patient-row .field:first-child{ grid-column:1/-1; }
   }
 
   /* ---------------- PRINT: fit two pages ---------------- */
   @media print{
     @page{ size:letter; margin:0.45in; }
     body{ background:#fff; }
-    .progress, .actions, .add-proc, .procedure-row button, .warn, .legal-note{ display:none !important; }
+    .progress, .actions, .add-proc, .procedure-row button, .legal-note, .lv-pad, .annot-canvas{ display:none !important; }
+    .print-footer{
+      display:block; position:fixed; left:0; right:0; bottom:0;
+      font-size:8px; color:#444; border-top:0.5px solid #999; padding-top:2px; background:#fff;
+    }
+    .wrap{ padding-bottom:14px !important; }
+    h2, .init-head{ break-after:avoid; page-break-after:avoid; }
+    #altList, #guaranteesList{ break-inside:avoid; }
+    ::placeholder{ color:transparent !important; }
+    input::-webkit-calendar-picker-indicator{ display:none !important; }
     .wrap{ max-width:100%; padding:0; }
     header.top img{ height:40px; }
     header.top h1{ font-size:14px; }
@@ -202,14 +257,14 @@
     .procedure-row{ border-bottom:none; padding-bottom:0; }
     .proc-summary{ font-size:9.5px; padding:1px 0 1px 8px; }
     .fields{ gap:4px 14px; }
-    .fields.patient-row{ gap:0 14px; }
+    .fields.patient-row{ gap:2px 14px; }
     label.f-label{ font-size:8.5px; }
     input[type=text], input[type=date], input[type=time], select, textarea{ font-size:10px; padding:3px 0; }
     .item{ padding:4px 0; }
     :root{ --cell-w:40px; --cell-h:19px; --cell-gap:5px; }
     .init-cell{ border-radius:3px; border-width:1px; }
     .init-head .h-cell{ font-size:7px; }
-    .init-reset{ display:none !important; }
+    .init-reset, .init-foot{ display:none !important; }
     .modal{ display:none !important; }
     .item .txt p{ font-size:9.3px; }
     .item .txt .sub{ margin-top:4px; padding-left:10px; }
@@ -270,27 +325,36 @@
     </div>
   </header>
 
-  <div class="intro">
-    Your physician is required by law to obtain your consent to perform the surgical procedure(s) listed below. Signing this form will acknowledge that you request and consent to your physician performing the recommended procedure(s). Your signature also confirms that your physician has explained to you the procedure(s), the risks of the procedure(s), the benefits of the procedure(s), and the alternatives to the procedure(s). Please read this entire form carefully and, before signing it, ask your physician any questions you have. Your request and consent is valid until you withdraw it.
-  </div>
 
   <section class="compact">
     <div class="fields patient-row">
       <div class="field">
-        <label class="f-label">Patient name</label>
-        <input type="text" id="patientName" placeholder="Full legal name">
+        <label class="f-label" for="patientName">Patient name</label>
+        <input type="text" id="patientName" placeholder="Full legal name" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
       </div>
       <div class="field">
-        <label class="f-label">Surgeon</label>
-        <input type="text" id="surgeon" value="Lloyd A. Hey, MD">
+        <label class="f-label" for="patientDob">Date of birth</label>
+        <input type="date" id="patientDob" autocomplete="off">
       </div>
       <div class="field">
-        <label class="f-label">Date</label>
-        <input type="date" id="formDate">
+        <label class="f-label" for="chartNo">Chart # (AdvancedMD)</label>
+        <input type="text" id="chartNo" placeholder="Chart / MRN" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       </div>
       <div class="field">
-        <label class="f-label">Time</label>
-        <input type="time" id="formTime">
+        <label class="f-label" for="surgeon">Surgeon</label>
+        <input type="text" id="surgeon" value="Lloyd A. Hey, MD" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="f-label" for="formDate">Date</label>
+        <input type="date" id="formDate" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="f-label" for="formTime">Time</label>
+        <input type="time" id="formTime" autocomplete="off">
+      </div>
+      <div class="field full">
+        <label class="f-label" for="companions">Family / friends present</label>
+        <input type="text" id="companions" placeholder="Names and relationship (e.g. Jane Doe – spouse), or “None”" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
       </div>
     </div>
   </section>
@@ -328,7 +392,7 @@
   <section>
     <h2>Notes</h2>
     <div class="field full">
-      <textarea id="notes" placeholder="Optional — anything specific to this conversation"></textarea>
+      <textarea id="notes" autocomplete="off" placeholder="Optional — anything specific to this conversation"></textarea>
     </div>
   </section>
 
@@ -350,15 +414,86 @@
     </div>
     <div class="field" style="margin-top:8px;">
       <label class="f-label">Witness name (print)</label>
-      <input type="text" id="witnessName" placeholder="Staff member witnessing">
+      <input type="text" id="witnessName" placeholder="Staff member witnessing" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
   </section>
-
-  <div class="warn" id="warnMsg">Complete the patient name, at least one procedure, both initials columns for every item, and both signatures before finishing.</div>
 
   <div class="actions">
     <button class="btn btn-ghost" id="printBtn" type="button">Print / Save PDF</button>
     <button class="btn btn-primary" id="completeBtn" type="button">Mark Complete</button>
+  </div>
+  <div class="actions">
+    <button class="btn btn-danger" id="newPatientBtn" type="button">New Patient (clear form)</button>
+  </div>
+
+  <!-- Blank-items check: informational only, never blocks completion -->
+  <div class="modal" id="blankModal" role="dialog" aria-modal="true" aria-labelledby="blankTitle">
+    <div class="modal-card">
+      <h3 id="blankTitle">These items were left blank</h3>
+      <ul class="blank-list" id="blankList"></ul>
+      <p class="hint">Continue anyway?</p>
+      <div class="actions">
+        <button class="btn btn-ghost" id="blankBack" type="button">Go back</button>
+        <button class="btn btn-primary" id="blankContinue" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shown after the print / PDF sheet closes -->
+  <div class="modal" id="afterModal" role="dialog" aria-modal="true" aria-labelledby="afterTitle">
+    <div class="modal-card">
+      <h3 id="afterTitle">PDF saved?</h3>
+      <p class="hint">Once the PDF is saved to <b>On My iPad › SDM Export</b> (or AirDropped), clear the form so no patient information stays on this iPad.</p>
+      <div class="actions">
+        <button class="btn btn-ghost" id="afterKeep" type="button">Keep form open</button>
+        <button class="btn btn-primary" id="afterClear" type="button">Clear for next patient</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Idle auto-clear warning -->
+  <div class="modal" id="idleModal" role="dialog" aria-modal="true" aria-labelledby="idleTitle">
+    <div class="modal-card">
+      <h3 id="idleTitle">Still working?</h3>
+      <p class="hint">For privacy, this form will clear itself in <b id="idleCount">60</b> seconds.</p>
+      <div class="actions">
+        <button class="btn btn-primary" id="idleKeep" type="button">Keep working</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick-entry keypad for spinal levels -->
+  <div class="lv-pad" id="lvPad" aria-hidden="true">
+    <div class="lv-row">
+      <button type="button" data-k="C">C</button>
+      <button type="button" data-k="T">T</button>
+      <button type="button" data-k="L">L</button>
+      <button type="button" data-k="iliac wing" class="wide">Iliac Wing</button>
+    </div>
+    <div class="lv-row">
+      <button type="button" data-k="1">1</button>
+      <button type="button" data-k="2">2</button>
+      <button type="button" data-k="3">3</button>
+      <button type="button" data-k="4">4</button>
+      <button type="button" data-k="5">5</button>
+    </div>
+    <div class="lv-row">
+      <button type="button" data-k="6">6</button>
+      <button type="button" data-k="7">7</button>
+      <button type="button" data-k="8">8</button>
+      <button type="button" data-k="9">9</button>
+      <button type="button" data-k="0">0</button>
+    </div>
+    <div class="lv-row">
+      <button type="button" data-k="-">–</button>
+      <button type="button" data-k="/">/</button>
+      <button type="button" data-k=" " class="wide">space</button>
+      <button type="button" data-act="back" class="act" aria-label="Delete">⌫</button>
+    </div>
+    <div class="lv-row">
+      <button type="button" data-act="abc" class="act wide">ABC keyboard</button>
+      <button type="button" data-act="done" class="done wide">Done</button>
+    </div>
   </div>
 
   <div class="modal" id="initModal">
@@ -376,7 +511,10 @@
     </div>
   </div>
 
-  <div class="legal-note">This on-screen form mirrors the clinic's paper Shared Decision Making document. Use "Print / Save PDF" from the iPad share sheet to save a signed copy into the patient's chart.</div>
+  <div class="legal-note">This on-screen form mirrors the clinic's paper Shared Decision Making document. Nothing entered here is saved or sent anywhere. Use “Mark Complete” → Share → Save to Files (On My iPad › SDM Export), AirDrop the PDF to the front desk for upload to AdvancedMD, then tap “New Patient”. <span id="versionNote"></span></div>
+
+  <!-- Repeats at the bottom of every printed page so a separated page can be identified -->
+  <div class="print-footer" id="printFooter"></div>
 
 </div>
 
@@ -423,7 +561,7 @@ const PROC_TYPES = [
       { id:'pmma',     label:'PMMA vertebroplasty with fenestrated screws', text:'PMMA vertebroplasty with fenestrated screws', lv:true },
       { id:'pso',      label:'Pedicle subtraction osteotomy (PSO)', text:'pedicle subtraction osteotomy (PSO)' },
       { id:'c7band',   label:'C7 sublaminar band (Globus or FiberWire)', text:'C7 sublaminar band (Globus or FiberWire)' },
-      { id:'removal',  label:'Removal of prior hardware',    text:'removal of prior hardware' },
+      { id:'removal',  label:'Removal of prior implants',    text:'removal of prior implants' },
       { id:'scs',      label:'Spinal cord stimulator removal (SCS)', text:'spinal cord stimulator removal' },
       { id:'oarm',     label:'O-arm with Stealth navigation (3D intraoperative CT)', text:'O-arm with Stealth navigation (3D intraoperative CT)' },
       { id:'levo',     label:'Levo cervical head holder',    text:'Levo cervical head holder' },
@@ -481,15 +619,15 @@ const BENEFITS = [
 const RISKS = [
   ["No improvement or worsening of symptoms.", "While the large majority of patients do have improvement of their symptoms, there is no guarantee that I will experience improvement, and I may have the same or worse symptoms."],
   ["Need for further surgery.", "Some conditions may occur that would require an additional surgery for correction. These include pseudoarthrosis, adjacent level failure, and infection as described:", [
-    ["Bone/Hardware Problems.", "Imbalance, bone fracture, hardware loosening/failure or nerve pinching which can cause pain. This may occur if my fusion does not fully heal."],
+    ["Bone/Implant Problems.", "Imbalance, bone fracture, implant loosening/failure or nerve pinching which can cause pain. This may occur if my fusion does not fully heal."],
     ["Adjacent Level Failure.", "Having a spinal fusion performed shifts the load of the body weight to other levels in the spine; therefore, I may develop problems with the levels above or below the fusion. The risk of this occurring is 10% - 30%."],
-    ["Infection.", "If I develop an infection as a result of my surgery, I may need antibiotics or another surgery to clean the wound."]
+    ["Infection.", "If I develop an infection as a result of my surgery, I may need antibiotics or another surgery to clean the wound. The risk of this occurring is 1% - 2%."]
   ]],
   ["Heart Attack, Stroke, Death.", "As with any surgery, I am at risk for a heart attack, stroke or death."],
   ["Blood Loss and Coagulopathies.", "I may lose enough blood to require a blood transfusion that will be given during surgery or during my inpatient hospital stay. There is a small chance that I may lose so much blood that death may result. There is also risk of developing clotting abnormalities."],
   ["Deep Venous Thrombosis (DVT) and Pulmonary Embolus (PE).", "As with any surgery, I am at risk for a blood clot to form. This may form in my leg (DVT) or it may travel to my lung (PE)."],
   ["Dural Tear (Nerve Sac Tear).", "Spinal surgery involves working around the nerves in my spine. There is a possibility that a tear in the sac containing the nerves can occur. If a tear should occur, it will be fixed during surgery. However, I may need to be on bed rest the first day after surgery."],
-  ["Nerve Root Irritation, Injury, or Paralysis.", "This is a very rare possibility, but can occur due to manipulating the nerve during surgery or placing of the hardware. Irritation to the nerve root usually resolves in several weeks."],
+  ["New Neurologic Deficit (Nerve Root Irritation, Injury, or Paralysis).", "This is a very rare possibility, but can occur due to manipulating the nerve during surgery or placing of the implant. Irritation to the nerve root usually resolves in several weeks. The risk of this occurring is less than 1%."],
   ["For anterior lumbosacral fusions", "there is a risk for major vessel / intestine / organ injury and a small risk of sterility in male patients."],
   ["For anterior cervical decompression fusions", "there is a risk for swallowing and voice problems. There is a risk of temporary or permanent trouble swallowing or talking."],
   ["Anesthesia and positioning risks include:", "arm or leg nerve injury, skin breakdown, adverse drug reaction, and/or blindness."]
@@ -565,6 +703,13 @@ function renderList(containerId, data, sectionKey, riskStyle){
       <div class="init-cells">${cells}</div>`;
     container.appendChild(row);
   });
+
+  // "Initial all" buttons under each initials column of this section
+  const foot = document.createElement('div');
+  foot.className = 'init-foot';
+  foot.innerHTML = INITIAL_COLUMNS.map(c=>`
+    <button class="init-all" type="button" data-col="${c.key}" data-section="${containerId}">Initial all</button>`).join('');
+  container.appendChild(foot);
 }
 
 /* ---- initials cells ---- */
@@ -606,6 +751,20 @@ function attachCheckHandlers(){
     });
   });
 
+  document.querySelectorAll('.init-all').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const col = btn.getAttribute('data-col');
+      const section = btn.getAttribute('data-section');
+      const fillSection = ()=>{
+        document.querySelectorAll(`#${section} .init-cell[data-col="${col}"]`).forEach(c=>{
+          if(!allItemsState[c.getAttribute('data-id') + ':' + col]) fillCell(c);
+        });
+      };
+      if(savedInitials[col]) fillSection();
+      else openInitialsModal(col, fillSection);
+    });
+  });
+
   document.querySelectorAll('.init-reset').forEach(btn=>{
     btn.addEventListener('click', e=>{
       e.stopPropagation();
@@ -644,6 +803,15 @@ function updateProgress(){
   document.getElementById('progressLbl').textContent = `${done} of ${total} initials collected`;
 }
 
+/* Every number typed into the time box is reported with units:
+   "4" -> "4 hours", "4 S, 5.5 T" -> "4 hours S, 5.5 hours T", "3-4 hrs" -> "3-4 hours". */
+function withHourUnits(raw){
+  const v = raw.trim();
+  if(!v) return '';
+  return v.replace(/(\d+(?:\.\d+)?(?:\s*[-–]\s*\d+(?:\.\d+)?)?)\s*(?:hours?|hrs?|h)?(?![\d.]|[a-z])/gi,
+    (m, n) => n + (n === '1' ? ' hour' : ' hours'));
+}
+
 function buildProcedureRow(){
   const row = document.createElement('div');
   row.className = 'procedure-row';
@@ -667,11 +835,14 @@ function buildProcedureRow(){
     </div>
     <div class="field lv-field" style="display:none">
       <label class="f-label">Levels</label>
-      <input type="text" class="proc-levels">
+      <input type="text" class="proc-levels lv-input" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
     </div>
     <div class="field hrs-field" style="display:none">
-      <label class="f-label">Hours</label>
-      <input type="text" class="proc-hours" placeholder="4 hrs S, 5.5 hrs T">
+      <label class="f-label">Estimated time (hours)</label>
+      <div class="unit-wrap">
+        <input type="text" class="proc-hours" placeholder="4  or  4 S, 5.5 T" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false">
+        <span class="unit">hours</span>
+      </div>
     </div>`;
 
   const select  = inline.querySelector('.proc-select');
@@ -708,9 +879,9 @@ function buildProcedureRow(){
             <label>
               <input type="checkbox" data-id="${a.id}"${type.defaults.includes(a.id) ? ' checked' : ''}>
               <span>${a.label}</span>
-              ${a.lv ? '<input type="text" class="detail" placeholder="Levels">' : ''}
+              ${a.lv ? '<input type="text" class="detail lv-input" placeholder="Levels" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">' : ''}
             </label>
-            ${a.free ? '<input type="text" class="detail" placeholder="Describe">' : ''}
+            ${a.free ? '<input type="text" class="detail" placeholder="Describe" autocomplete="off">' : ''}
           </div>`).join('')}
       </div>`;
   }
@@ -736,7 +907,7 @@ function buildProcedureRow(){
     });
     if(parts.length) name += ' with ' + parts.join(', ');
 
-    const h = hours.value.trim();
+    const h = withHourUnits(hours.value);
     if(h) name += ` (${h})`;
 
     summary.className = name ? 'proc-summary' : 'proc-summary empty';
@@ -871,31 +1042,223 @@ attachCheckHandlers();
 updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
+/* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
+const FORM_VERSION = '14';
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
+function val(id){ return document.getElementById(id).value.trim(); }
+
 const today = new Date();
-document.getElementById('formDate').value = today.toISOString().slice(0,10);
-document.getElementById('formTime').value = today.toTimeString().slice(0,5);
+document.getElementById('formDate').value = localDate(today);
+document.getElementById('formTime').value = `${pad2(today.getHours())}:${pad2(today.getMinutes())}`;
+document.getElementById('versionNote').textContent = `Form v${FORM_VERSION}.`;
 
 document.getElementById('patientName').addEventListener('input', ()=>{
   document.getElementById('sigPatientName').textContent = document.getElementById('patientName').value || '—';
 });
 
-document.getElementById('printBtn').addEventListener('click', ()=> window.print());
-
-document.getElementById('completeBtn').addEventListener('click', ()=>{
-  const name = document.getElementById('patientName').value.trim();
-  const allChecked = Object.values(allItemsState).every(v=>v);
-  const hasProc = [...document.querySelectorAll('.proc-summary')].some(el=>!el.classList.contains('empty'));
-  const patientSigned = document.getElementById('padPatient')._hasInk();
-  const witnessSigned = document.getElementById('padWitness')._hasInk();
-  const witnessName = document.getElementById('witnessName').value.trim();
-
-  if(!name || !hasProc || !allChecked || !patientSigned || !witnessSigned || !witnessName){
-    document.getElementById('warnMsg').classList.add('show');
-    return;
-  }
-  document.getElementById('warnMsg').classList.remove('show');
-  window.print();
+/* ---------- Clearing: no patient data may outlive the visit ----------
+   Everything lives only in this page's memory, so reloading wipes it completely. */
+function wipeForm(){
+  document.querySelectorAll('input, textarea').forEach(el=>{ el.value = ''; });
+  location.replace(location.pathname);
+}
+document.getElementById('newPatientBtn').addEventListener('click', ()=>{
+  if(confirm('Clear this form for the next patient? Make sure the PDF has been saved first.')) wipeForm();
 });
+// Leaving or closing the page wipes it; if iOS restores it from cache, reload a blank copy.
+window.addEventListener('pagehide', ()=>{ document.querySelectorAll('input, textarea').forEach(el=>{ el.value = ''; }); });
+window.addEventListener('pageshow', e=>{ if(e.persisted) location.replace(location.pathname); });
+
+/* Idle auto-clear: after 20 minutes with no touch, warn for 60 s, then wipe. */
+(function(){
+  const IDLE_MS = 20*60*1000, WARN_S = 60;
+  const modal = document.getElementById('idleModal');
+  const countEl = document.getElementById('idleCount');
+  let last = Date.now(), countdown = null;
+  ['pointerdown','keydown','input','scroll','touchstart'].forEach(ev=>
+    window.addEventListener(ev, ()=>{ if(!countdown) last = Date.now(); }, {passive:true, capture:true}));
+  document.getElementById('idleKeep').addEventListener('click', ()=>{
+    clearInterval(countdown); countdown = null; last = Date.now(); modal.classList.remove('show');
+  });
+  setInterval(()=>{
+    if(countdown || Date.now() - last < IDLE_MS) return;
+    let left = WARN_S; countEl.textContent = left; modal.classList.add('show');
+    countdown = setInterval(()=>{
+      left--; countEl.textContent = left;
+      if(left <= 0){ clearInterval(countdown); wipeForm(); }
+    }, 1000);
+  }, 5000);
+})();
+
+/* ---------- Print / PDF ---------- */
+function usDate(iso){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); return m ? `${m[2]}/${m[3]}/${m[1]}` : iso; }
+function printFooterText(){
+  const parts = [
+    `Patient: ${val('patientName') || '—'}`,
+    `DOB: ${usDate(val('patientDob')) || '—'}`,
+    `Chart #: ${val('chartNo') || '—'}`,
+    `Date: ${usDate(val('formDate')) || '—'}`,
+    `Hey Clinic — Shared Decision Making — Form v${FORM_VERSION}`
+  ];
+  return parts.join('   ·   ');
+}
+// Safari names the PDF after the page title: SDM_Lastname-Firstname_2026-10-01
+function pdfTitle(){
+  const name = val('patientName');
+  let who = 'Patient';
+  if(name){
+    const bits = name.split(/\s+/);
+    const last = bits.length > 1 ? bits.pop() : '';
+    who = (last ? last + '-' : '') + bits.join('-');
+  }
+  who = who.replace(/[^A-Za-z0-9-]/g, '');
+  return `SDM_${who || 'Patient'}_${val('formDate') || localDate(new Date())}`;
+}
+const ORIGINAL_TITLE = document.title;
+let printedOnce = false;
+window.addEventListener('beforeprint', ()=>{
+  document.getElementById('printFooter').textContent = printFooterText();
+  document.title = pdfTitle();
+});
+window.addEventListener('afterprint', ()=>{
+  document.title = ORIGINAL_TITLE;
+  if(printedOnce) setTimeout(()=>document.getElementById('afterModal').classList.add('show'), 300);
+});
+function doPrint(){
+  document.getElementById('printFooter').textContent = printFooterText();
+  document.title = pdfTitle();
+  printedOnce = true;
+  window.print();
+}
+document.getElementById('afterKeep').addEventListener('click', ()=>document.getElementById('afterModal').classList.remove('show'));
+document.getElementById('afterClear').addEventListener('click', wipeForm);
+
+document.getElementById('printBtn').addEventListener('click', doPrint);
+
+/* ---------- Mark Complete: list anything left blank, but never block ---------- */
+function blankItems(){
+  const out = [];
+  if(!val('patientName')) out.push('Patient name');
+  if(!val('patientDob')) out.push('Date of birth');
+  if(!val('chartNo')) out.push('Chart #');
+  if(!val('formDate')) out.push('Date');
+  if(!val('companions')) out.push('Family / friends present');
+  const hasProc = [...document.querySelectorAll('.proc-summary')].some(el=>!el.classList.contains('empty'));
+  if(!hasProc) out.push('Procedure(s) requested');
+  const sections = [['benefitsList','Benefits'],['risksList','Risks'],['altList','Alternatives'],
+                    ['guaranteesList','Guarantees'],['additionalList','Additional information']];
+  INITIAL_COLUMNS.forEach(c=>{
+    const where = [];
+    sections.forEach(([id,label])=>{
+      const cells = [...document.querySelectorAll(`#${id} .init-cell[data-col="${c.key}"]`)];
+      const missing = cells.filter(el=>!allItemsState[el.getAttribute('data-id') + ':' + c.key]).length;
+      if(missing) where.push(`${label} (${missing})`);
+    });
+    if(where.length) out.push(`${c.label} initials missing: ${where.join(', ')}`);
+  });
+  if(!document.getElementById('padPatient')._hasInk()) out.push('Patient signature');
+  if(!document.getElementById('padWitness')._hasInk()) out.push('Witness signature');
+  if(!val('witnessName')) out.push('Witness name');
+  return out;
+}
+const blankModal = document.getElementById('blankModal');
+document.getElementById('completeBtn').addEventListener('click', ()=>{
+  const blanks = blankItems();
+  if(!blanks.length){ doPrint(); return; }
+  const list = document.getElementById('blankList');
+  list.innerHTML = '';
+  blanks.forEach(b=>{ const li = document.createElement('li'); li.textContent = b; list.appendChild(li); });
+  blankModal.classList.add('show');
+});
+document.getElementById('blankBack').addEventListener('click', ()=>blankModal.classList.remove('show'));
+document.getElementById('blankContinue').addEventListener('click', ()=>{
+  blankModal.classList.remove('show');
+  setTimeout(doPrint, 50);
+});
+
+/* ---------- Levels keypad ----------
+   Levels boxes open a large C / T / L / Iliac Wing / number pad instead of the iPad keyboard.
+   "ABC keyboard" switches that box to the normal keyboard until you leave it.       */
+(function(){
+  const pad = document.getElementById('lvPad');
+  let target = null;
+
+  function show(input){
+    target = input;
+    pad.classList.add('show');
+    document.body.classList.add('pad-open');
+    const r = input.getBoundingClientRect();
+    if(r.bottom > window.innerHeight - pad.offsetHeight - 12){
+      window.scrollBy({ top: r.bottom - (window.innerHeight - pad.offsetHeight) + 24, behavior:'smooth' });
+    }
+  }
+  function hide(){
+    pad.classList.remove('show');
+    document.body.classList.remove('pad-open');
+    target = null;
+  }
+  function insert(text){
+    const el = target; if(!el) return;
+    const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? el.value.length;
+    el.value = el.value.slice(0,a) + text + el.value.slice(b);
+    el.setSelectionRange(a + text.length, a + text.length);
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+  function backspace(){
+    const el = target; if(!el) return;
+    let a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? el.value.length;
+    if(a === b){
+      if(a === 0) return;
+      // delete "iliac wing" as one unit
+      a = el.value.slice(0,a).toLowerCase().endsWith('iliac wing') ? a - 10 : a - 1;
+    }
+    el.value = el.value.slice(0,a) + el.value.slice(b);
+    el.setSelectionRange(a, a);
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+
+  document.addEventListener('focusin', e=>{
+    const el = e.target;
+    if(el.matches && el.matches('input.lv-input') && el.dataset.native !== '1') show(el);
+  });
+  document.addEventListener('focusout', e=>{
+    const el = e.target;
+    if(!(el.matches && el.matches('input.lv-input'))) return;
+    delete el.dataset.native;
+    el.setAttribute('inputmode','none');
+    setTimeout(()=>{
+      const a = document.activeElement;
+      if(!(a && a.matches && a.matches('input.lv-input') && a.dataset.native !== '1')) hide();
+    }, 0);
+  });
+
+  // keep focus (and the caret) in the levels box while tapping keys
+  pad.addEventListener('pointerdown', e=>e.preventDefault());
+  pad.addEventListener('mousedown', e=>e.preventDefault());
+  pad.addEventListener('click', e=>{
+    e.stopPropagation();               // don't close the add-on panel
+    const btn = e.target.closest('button'); if(!btn || !target) return;
+    const k = btn.getAttribute('data-k'), act = btn.getAttribute('data-act');
+    if(k !== null){ insert(k); return; }
+    if(act === 'back'){ backspace(); return; }
+    if(act === 'done'){ const el = target; hide(); el.blur(); return; }
+    if(act === 'abc'){
+      const el = target;
+      el.blur();                         // resets to keypad mode, so switch after
+      el.setAttribute('inputmode','text');
+      el.dataset.native = '1';
+      hide();
+      el.focus();
+    }
+  });
+})();
+
+/* ---------- Offline: cache the form on this iPad so it opens with no network ---------- */
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 /* ---------- Draw / annotate overlay ---------- */
 (function(){
   const canvas = document.getElementById('annotCanvas');
