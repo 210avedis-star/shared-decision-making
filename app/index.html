@@ -100,13 +100,13 @@
   .pdf-mode .na-text{ font-size:8px; }
   /* faint line through the title of an item marked N/A */
   body:not(.pdf-mode) .item.na .txt > p > strong{
-    background:linear-gradient(transparent calc(50% - 0.75px), rgba(35,35,35,.4) calc(50% - 0.75px),
-                               rgba(35,35,35,.4) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+    background:linear-gradient(transparent calc(50% - 1px), rgba(35,35,35,.8) calc(50% - 1px),
+                               rgba(35,35,35,.8) calc(50% + 1px), transparent calc(50% + 1px));
   }
   /* in the PDF the same line is drawn word by word (the PDF renderer mishandles the gradient) */
   .pdf-mode .item.na .pdf-u{ position:relative; }
   .pdf-mode .item.na .pdf-u::after{
-    content:''; position:absolute; left:0; right:0; top:52%; border-top:1px solid rgba(35,35,35,.45);
+    content:''; position:absolute; left:0; right:0; top:50%; border-top:1.5px solid rgba(35,35,35,.8);
   }
   .init-cell.filled{ border-color:var(--brand); background:#F5F8FF; }
   .init-head{
@@ -444,10 +444,6 @@
       <button class="sig-clear" data-target="padWitness" type="button">Clear</button>
     </div>
     <div class="sig-meta"><span></span><span class="sig-when" id="whenWitness"></span></div>
-    <div class="field" style="margin-top:4px;">
-      <label class="f-label">Witness name (print)</label>
-      <input type="text" id="witnessName" placeholder="Staff member witnessing" autocomplete="off" autocorrect="off" spellcheck="false">
-    </div>
 
     <label class="f-label" style="margin-top:16px; display:block;">Physician signature</label>
     <div class="sig-pad-wrap">
@@ -638,11 +634,14 @@ const PROC_TYPES = [
   },
   {
     name:'Microdiscectomy',
-    sides:['Left', 'Right'],
-    build:(lv, side)=>`${side ? side + ' ' : ''}${lv} microdiscectomy`,
+    build:lv=>`${lv} microdiscectomy`,
     levelPh:'L4-5',
     defaults:[],
-    addons:[ OTHER ]
+    addons:[
+      { id:'left',     label:'Left',                         text:'left',  prefix:true },
+      { id:'right',    label:'Right',                        text:'right', prefix:true },
+      OTHER
+    ]
   },
   {
     name:'Anterior Cervical Discectomy and Fusion (ACDF)',
@@ -773,9 +772,7 @@ function renderList(containerId, data, sectionKey, riskStyle){
   const head = document.createElement('div');
   head.className = 'init-head';
   head.innerHTML = INITIAL_COLUMNS.map(c=>`
-    <div class="h-cell">${c.label}
-      <button class="init-reset" type="button" data-reset="${c.key}">change</button>
-    </div>`).join('');
+    <div class="h-cell">${c.label}</div>`).join('');
   container.parentNode.insertBefore(head, container);
 
   data.forEach((entry, idx)=>{
@@ -865,18 +862,6 @@ function attachCheckHandlers(){
     });
   });
 
-  document.querySelectorAll('.init-reset').forEach(btn=>{
-    btn.addEventListener('click', e=>{
-      e.stopPropagation();
-      const col = btn.getAttribute('data-reset');
-      openInitialsModal(col, ()=>{
-        // re-stamp every box already initialled in this column
-        document.querySelectorAll(`.init-cell[data-col="${col}"]`).forEach(c=>{
-          if(allItemsState[c.getAttribute('data-id') + ':' + col] && !c.classList.contains('na')) stampCell(c, savedInitials[col]);
-        });
-      });
-    });
-  });
 }
 
 /* ---- capture modal ---- */
@@ -1010,15 +995,18 @@ function buildProcedureRow(){
     let name = type.build(lv, side).replace(/\s+/g,' ').trim();
     name = name.charAt(0).toUpperCase() + name.slice(1);
 
-    const parts = [];
+    const parts = [], before = [];
     type.addons.forEach(a=>{
       const wrap = panel.querySelector(`.addon[data-addon="${a.id}"]`);
       if(!wrap || !wrap.querySelector('input[type=checkbox]').checked) return;
+      if(a.prefix){ before.push(a.text); return; }     // e.g. Left / Right go in front of the name
       const detailEl = wrap.querySelector('.detail');
       const d = detailEl ? detailEl.value.trim() : '';
       if(a.free){ if(d) parts.push(d); return; }
       parts.push(a.lv && d ? `${a.text} at ${d}` : a.text);
     });
+    if(before.length) name = before.join(' and ') + ' ' + name;
+    name = name.charAt(0).toUpperCase() + name.slice(1);
     if(parts.length) name += ' with ' + parts.join(', ');
 
     const h = withHourUnits(hours.value);
@@ -1173,7 +1161,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '22';
+const FORM_VERSION = '23';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1458,7 +1446,6 @@ function blankItems(){
   });
   if(!document.getElementById('padPatient')._hasInk()) out.push('Patient signature');
   if(!document.getElementById('padWitness')._hasInk()) out.push('Witness signature');
-  if(!val('witnessName')) out.push('Witness name');
   if(!document.getElementById('padPhysician')._hasInk()) out.push('Physician signature');
   return out;
 }
