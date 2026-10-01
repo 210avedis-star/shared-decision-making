@@ -95,7 +95,7 @@ HIPAA compliance belongs to the clinic as a whole (risk analysis, policies, trai
 1. ☐ Choose where to host the blank form (see `docs/IPAD_SETUP.md` §1) and publish the `app/` folder.
 2. ☐ Set up each iPad (`docs/IPAD_SETUP.md` §2) and the MDM restrictions (§3 above).
 3. ☐ Confirm the AdvancedMD document category for SDM forms with your AdvancedMD admin.
-4. ☐ Dry run on a real iPad with a test patient: fill in → Mark Complete → save PDF → AirDrop → upload → print from AdvancedMD → check both pages.
+4. ☐ Dry run on a real iPad with a test patient: fill in → Print / Save PDF → save PDF → AirDrop → upload → print from AdvancedMD → check both pages.
 5. ☐ Train staff with `docs/STAFF_SOP.md`, and update the Security Risk Analysis.
 6. ☐ Go live in one room, then the rest.
 
