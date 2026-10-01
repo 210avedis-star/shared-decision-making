@@ -1,0 +1,17 @@
+# Netlify: serve the form from the app/ folder (there is no build step).
+[build]
+  publish = "app"
+  command = ""
+
+# Always check for a newer service worker so every iPad picks up form updates.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Referrer-Policy = "no-referrer"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
