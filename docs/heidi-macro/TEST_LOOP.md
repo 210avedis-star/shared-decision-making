@@ -211,7 +211,13 @@ Keep timestamped copies as `test/reports/run-<time>-<case>.md`. They're git-igno
 
 ---
 
-## 8. One-command use
+## 8. Feature versions
+
+`FEATURES.md` adds cases for v21–v23 (`P`, `D`, `T`, and new expectations for `A` and `N`). Add each version's cases to `live_run.sh` and the stop condition before starting that version. From v23 on, the report also shows `Duration` against the previous version.
+
+---
+
+## 9. One-command use
 
 Save this as `.claude/commands/verify-macro.md` in the project. The person can then type `/verify-macro` in Claude Code:
 
