@@ -397,21 +397,23 @@ on redact(s)
 	return my redactWith(s, PHI_WORDS)
 end redact
 
--- Removes the given words, plus anything shaped like an email, date, ID (5+ digits) or "Last, First" name
-on redactWith(s, words)
+-- Removes the given words, plus anything shaped like an email, date, ID (5+ digits) or "Last, First" name.
+-- (The list is called wordList because "words" is a reserved word in AppleScript. Case-insensitive matching
+-- uses the regex flag (?i) instead of adding two option constants together, which fails on some Macs.)
+on redactWith(s, wordList)
 	set t to current application's NSMutableString's stringWithString:(s as text)
-	set opts to (current application's NSRegularExpressionSearch) + (current application's NSCaseInsensitiveSearch)
-	repeat with w in words
+	set rx to current application's NSRegularExpressionSearch
+	repeat with w in wordList
 		set w to w as text
 		if length of w > 1 then
-			set pat to "\\b" & ((current application's NSRegularExpression's escapedPatternForString:w) as text) & "\\b"
-			(t's replaceOccurrencesOfString:pat withString:"[phi]" options:opts range:{0, t's |length|()})
+			set pat to "(?i)\\b" & ((current application's NSRegularExpression's escapedPatternForString:w) as text) & "\\b"
+			(t's replaceOccurrencesOfString:pat withString:"[phi]" options:rx range:{0, t's |length|()})
 		end if
 	end repeat
 	set pats to {"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", "\\b\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b", "\\b\\d{5,}\\b", "\\b[A-Z][A-Za-z'\\-]+ ?, ?[A-Z][A-Za-z'\\-]+( [A-Z]\\.?)?"}
 	set reps to {"[email]", "[date]", "[id]", "[name]"}
 	repeat with i from 1 to count of pats
-		(t's replaceOccurrencesOfString:(item i of pats) withString:(item i of reps) options:(current application's NSRegularExpressionSearch) range:{0, t's |length|()})
+		(t's replaceOccurrencesOfString:(item i of pats) withString:(item i of reps) options:rx range:{0, t's |length|()})
 	end repeat
 	return t as text
 end redactWith

@@ -25,7 +25,7 @@ A diagnostic only reads. It never clicks Save or creates anything, except where 
 
 | Name | Reads | Must not output |
 |---|---|---|
-| **D1 `heidi-template`** | In a **test patient's** Heidi session: <ul><li>the Note tab's toolbar buttons (tag, role, aria-label, text, e.g. "Auto", "Goldilocks");</li><li>after clicking the template button, the picker dialog's search box, section headings ("Favourites", "Created by You") and item names.</li></ul> Template names aren't patient data. Close the picker with Escape. | Anything outside the toolbar row and the picker dialog (for example the sidebar session list). |
+| **D1 `heidi-template`** | In a **test patient's** Heidi session: <ul><li>the Note tab's toolbar buttons (tag, role, aria-label, text, e.g. "Auto", "Goldilocks"), and the same toolbar on a tab that already has a template (its first button shows the template name, e.g. "PA Outpatient Consultation …");</li><li>after clicking the template button, the picker dialog's search box, section headings ("Favourites", "Created by You") and item names.</li></ul> Template names aren't patient data. Close the picker with Escape. | Anything outside the toolbar row and the picker dialog (for example the sidebar session list). |
 | **D2 `amd-provider`** | On the open appointment, every `select`/`input`/`span` whose id or nearby label mentions "provider": its **id**, its **label**, and the selected value (staff names aren't patient data). | Any other page text. |
 | **D3 `amd-notes`** | The chart's notes or encounter list: the **unique note type or template names** and how many of each. No dates, no note content. | Dates, note text, banner. |
 | **D4 `amd-chartprint`** | Opens Chart Print's **Load Report Setup** panel and lists its labels, control types and ids (date fields, filters, checkboxes), then closes it **without printing**. | Anything outside the panel. |
@@ -62,11 +62,11 @@ The "already there" check looks for a tab starting with the full template name, 
 
 **New behavior**
 1. Delete the whole **+ → Create a document** path from the template step.
-2. On the **Note** tab, click its **template button**: the button in the Note toolbar that shows the current template name, next to "Auto". D1 confirms how to find it.
+2. On the **Note** tab, click its **template button**. Screenshots suggest this is the **first** button in the tab's toolbar, which shows "Auto" until a template is chosen and the template name afterwards (for example "PA Outpatient Consultation …"). "Goldilocks", next to it, looks like a note-style setting, not the template. D1 confirms both. Don't change Goldilocks.
 3. In the picker, type the template name into the search box and click the item whose text **exactly** equals the name. Normalize case and spaces; no prefix match. If 0 or more than 1 items match, fail with `template not found` or `template ambiguous`.
 4. **Never** touch the "Set as default" toggle.
 5. **Check it worked:** the Note tab's template button now shows the chosen name. Log `Note template set: yes/no` (template names are fine to log).
-6. If D1 shows that "Auto" can override a chosen template, make sure "Auto" is off. If it's unclear, fail and report.
+6. If D1 shows the template can be set but then changes back to "Auto", fail and report.
 7. Don't delete the AI "Outpatient Consultation" documents earlier runs made. Log `old AI documents present: N` so the person can remove them.
 
 **Template names.** Replace these properties:

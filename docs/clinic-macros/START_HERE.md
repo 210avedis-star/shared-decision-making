@@ -83,12 +83,12 @@ Don't change any macro.applescript yet, and don't do live runs.
 ```
 Then fill in `testkit/config.local.sh` with the fake patients.
 
-**2. Prove the leak checker catches real leaks.** Run the **original** Heidi macro (⌘3) yourself on Test A, then:
+**2. Prove the leak checker catches real leaks.** First have Claude Code run `testkit/leakcheck.sh heidi-session --prepare`. Then run the **original** Heidi macro (⌘3) yourself on Test A, then:
 ```
 Run testkit/leakcheck.sh heidi-session for the run I just did. It must FAIL L1 and L4.
 If it doesn't, the checker is broken: fix it and tell me what was wrong.
 ```
-Do the same with the original ⌘1 on Test A's Heidi session. It must FAIL L4.
+Do the same with the original ⌘1 on Test A's Heidi session (with `--prepare heidi-to-doc` first). It must FAIL L4.
 
 **3. Fix the Heidi session macro (v20)**
 ```
