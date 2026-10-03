@@ -13,10 +13,10 @@ When v20 is done:
 
 ## Rules for making the edits
 
-- Work on a copy: `heidi_add_session.applescript` (v19) → commit as-is first, then edit.
+- Work on a copy: `macro.applescript` (v19) → commit as-is first, then edit.
 - The `JS_*` properties are JavaScript inside AppleScript strings. In them, `"` is written `\"` and `\` is written `\\`. The replacements below avoid both where possible. Keep the escaping exactly right.
 - Each find string below is unique in v19. If one isn't found exactly, stop and report it. Don't guess.
-- After the edits, `test/cycle.sh static` must pass (see `TEST_LOOP.md`).
+- After the edits, `testkit/cycle.sh heidi-session static` must pass (see `TESTING.md` in the Clinic Macros folder).
 
 ---
 
@@ -446,7 +446,51 @@ end emailFromDemographics
 
 ## Part 6: acceptance criteria
 
-- `test/cycle.sh static` passes: it compiles, the forbidden-pattern lint is clean, every `JS_*` string parses, and the `redactWith` tests pass.
-- `test/cycle.sh live` passes for every case in `TEST_LOOP.md`, and every leak check passes.
+- `testkit/cycle.sh heidi-session static` passes: it compiles, the forbidden-pattern lint is clean, every `JS_*` string parses, and the `redactWith` tests pass.
+- `testkit/cycle.sh heidi-session live` passes for every repeatable case in `heidi-session/test.conf`, and every leak check passes.
 - The macro still works from Keyboard Maestro with no arguments (normal mode). One manual run by a person on the test patient.
 
+
+## Part 7: `lint.extra` and `test.conf` for heidi-session
+
+**`heidi-session/lint.extra`** (on top of the common rules in `TESTING.md` §3):
+```
+forbid path to downloads folder   # chart PDF never on disk
+forbid km_chart|base64 -D|base64 -i   # no temp PDF or base64 file
+forbid emailFromPDF|CHART_EMAIL   # removed in v20
+forbid log\(pageMap\(\)\)   # page snapshots never go to the log
+forbid 'A=' \+ JSON\.stringify   # whole patient record in the log
+forbid JSON\.stringify\(appts\)   # appointment list in an error payload
+forbid quoted form of repURL   # patient id in a shell argument
+forbid v: 19|v === 19   # the old page library would stay loaded
+require v: 20
+require H\.clear = function
+require if \(window\.__kmTest\) throw
+require on idFromURL\(
+require on emailFromDemographics\(
+require \(function\(\)\{" & testFlag
+require STAGE amd-read
+require STAGE amd-email
+require STAGE heidi-phase1
+require STAGE amd-chart
+require STAGE heidi-phase2
+```
+
+**`heidi-session/test.conf`**: use the example in `TESTING.md` §4 as-is. It is this macro's config.
+
+| Case | Who | Setup | Expected |
+|---|---|---|---|
+| `G` guard | Claude | Test A's appointment open | Fails with the test-mode guard message; no `STAGE heidi-phase1`. |
+| `A` existing | Claude | Test A's appointment open | `RESULT: PASS`, `Outcome: existing patient`. |
+| `N` new | Person first | Test N deleted from Heidi, Test N's appointment open | `RESULT: PASS`, `Outcome: new patient`, `Chart report matches the patient on screen: true`, `PDF received:`. |
+| `K` Keyboard Maestro | Person | Test A open, run from Keyboard Maestro | Works as before; leak check passes. |
+
+**Stage → code map (for reports)**
+
+| Stage | Code |
+|---|---|
+| `amd-read` | `JS_AMD_READ`, top of `mainFlow` |
+| `amd-email` | `emailFromDemographics`, `JS_AMD_EMAIL` |
+| `heidi-phase1` | `H.phase1`. The step name points to the block: "start a new Heidi session", "find or create the patient", "add the … template", "fill in the new patient details", "set the session date & time". |
+| `amd-chart` | `getChartPDF`, `JS_AMD_PRINT`, `JS_REPORT_PDF` |
+| `heidi-phase2` | `H.phase2` (attach, then context) |

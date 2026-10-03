@@ -1,6 +1,6 @@
 # Task 4: Feature changes (v21–v23)
 
-Do these **after v20** (HIPAA fixes and test mode in `EDITS.md`) passes the test loop. Each version is tested with the loop in `TEST_LOOP.md` before the next one starts.
+Do these **after v20** (HIPAA fixes and test mode in `EDITS.md`) passes the test loop. Each version is tested with the shared loop in `TESTING.md` before the next one starts.
 
 | Version | What | Needs first |
 |---|---|---|
@@ -9,7 +9,7 @@ Do these **after v20** (HIPAA fixes and test mode in `EDITS.md`) passes the test
 | **v23** | Faster: fewer tab switches, waits that end when ready instead of fixed sleeps | v22 passing |
 | later | Runs by itself every morning for every patient | Separate project (§6). Not started until the person approves. |
 
-The rules in `CLAUDE.md` apply throughout: test patient only, never look at pages yourself, never weaken a safety feature.
+The rules in `CLAUDE.md` and `TESTING.md` apply throughout: test patient only, never look at pages yourself, never weaken a safety feature.
 
 ---
 
@@ -18,10 +18,10 @@ The rules in `CLAUDE.md` apply throughout: test patient only, never look at page
 Some page details aren't known yet: the Heidi template picker, the AMD provider field, the AMD notes list and the Chart Print setup panel. Add a diagnostic mode so the macro can describe them **without capturing patient data**:
 
 ```
-osascript heidi_add_session.applescript --test <TestLast> --diag <name>
+osascript macro.applescript --test <TestLast> --diag <name>
 ```
 
-A diagnostic only reads. It never clicks Save or creates anything, except where noted below. It writes its output to `test/reports/diag-<name>.md`, and the leak check runs on that file too.
+A diagnostic only reads. It never clicks Save or creates anything, except where noted below. It writes its output to `testkit/reports/heidi-session/diag-<name>.md`, and the leak check runs on that file too.
 
 | Name | Reads | Must not output |
 |---|---|---|
@@ -84,7 +84,7 @@ property TPL_OTHER : "PA Outpatient Consultation Note"
   - empty or not found → in test mode, fail with `provider not read`; in normal mode, ask as today.
 - Log `provider kind=hey|other`. The staff name may be logged; it isn't patient data.
 
-### 2.5 v21 tests (add to `TEST_LOOP.md` cases)
+### 2.5 v21 tests (add to `heidi-session/test.conf`)
 
 | Case | Setup | Expected |
 |---|---|---|
@@ -152,7 +152,7 @@ property TPL_OTHER : "PA Outpatient Consultation Note"
 
 ## 5. Definition of done (v21–v23)
 
-- All cases in `TEST_LOOP.md` pass, including the new ones here, with every leak check passing.
+- All cases in `heidi-session/test.conf` pass, including the new ones here, with every leak check passing.
 - Clearly faster per patient than v22, with no new failures.
 - A person does one normal Keyboard Maestro run on Test A.
 - A person spot-checks the result in Heidi: the Note tab shows the right template, no new sparkle tabs, today's chart is in Files and used as context, and the demographics are correct.
