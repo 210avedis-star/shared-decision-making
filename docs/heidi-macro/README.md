@@ -3,7 +3,7 @@
 | File | For | What it is |
 |---|---|---|
 | `CLAUDE.md` | Claude Code | Patient-data rules it must follow in the macro project. |
-| `EDITS.md` | Claude Code | Task 1: goals and exact edits for v20 (HIPAA fixes, test mode, stage markers). Task 2: small SDM form edits. |
+| `EDITS.md` | Claude Code | Task 1: goals and exact edits for v20 (HIPAA fixes, test mode, stage markers). |
 | `TEST_LOOP.md` | You + Claude Code | Task 3: one-time setup, the test scripts to build, leak checks, report format, and the fix-and-retest loop. |
 | `FEATURES.md` | Claude Code | Task 4: your requested changes. **v21** demographics for every patient, chart for every patient, correct note template, Dr. Hey vs PA. **v22** chart since last visit, 200-page cap. **v23** faster. **Later:** the morning run. |
 
@@ -15,19 +15,45 @@
 
 The HIPAA fixes and test loop come first because every later change is tested with them.
 
+## Where the files go
+
+```
+Clinic Macros/
+  CLAUDE.md                        your project rules (keep; add the pointer below)
+  Clinic_Macros_Macros.kmmacros    your export (never overwritten)
+  heidi-session/
+    CLAUDE.md  README.md  EDITS.md  TEST_LOOP.md  FEATURES.md   ← this pack
+    heidi_add_session.applescript  ← Claude Code pulls this out of the export (Prompt 1)
+    test/                          ← Claude Code builds this (Prompt 2)
+```
+
+Add this to the end of the root `CLAUDE.md`:
+
+```markdown
+## Heidi session macro
+Work on "W add Heidi Session27" happens in heidi-session/. Read heidi-session/CLAUDE.md and README.md before touching it.
+```
+
 ## How to use it
 
-1. Do the one-time setup in `TEST_LOOP.md` §1: project folder, test patients, `config.local.sh`, Mac permissions.
-2. Copy these four files into the project folder, next to `heidi_add_session.applescript`.
-3. Open Claude Code in that folder and paste the prompts below, one at a time.
+1. Do the one-time setup in `TEST_LOOP.md` §1 (test patients, `config.local.sh`, Mac permissions). The "project folder" is `Clinic Macros/heidi-session/`.
+2. Open Claude Code in `Clinic Macros` and paste the prompts below, one at a time.
 
-### Prompt 1: make the edits
+### Prompt 1: pull the script out and make the edits
 
 ```
-Read CLAUDE.md and EDITS.md. First commit heidi_add_session.applescript as-is and tag it v19.
-Then do Task 1 exactly as written, in order. If any "find" text isn't found exactly, stop and tell me which one.
-Don't change anything EDITS.md doesn't list. Commit as "v20: HIPAA fixes, test mode, stage markers".
+Read CLAUDE.md, then heidi-session/CLAUDE.md and heidi-session/EDITS.md.
+1. From Clinic_Macros_Macros.kmmacros, copy the AppleScript text of the macro "W add Heidi Session27"
+   into heidi-session/heidi_add_session.applescript exactly as it is. Don't change the export file.
+   Commit it and tag it v19.
+2. Do Task 1 in EDITS.md exactly as written, in order. If any "find" text isn't found exactly, stop and
+   tell me which one. Don't change anything EDITS.md doesn't list. Commit as "v20: HIPAA fixes, test mode, stage markers".
+3. Make a new export file macros-fixed-v1.kmmacros, a copy of the original where only "W add Heidi Session27"
+   changes: its Execute AppleScript action runs the script file heidi-session/heidi_add_session.applescript
+   instead of inline text. Explain in plain language how I import it.
 ```
+
+After you import it, Keyboard Maestro runs the file, so every later fix reaches Keyboard Maestro without another import.
 
 ### Prompt 2: build the test tools
 

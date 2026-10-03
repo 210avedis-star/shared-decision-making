@@ -450,15 +450,3 @@ end emailFromDemographics
 - `test/cycle.sh live` passes for every case in `TEST_LOOP.md`, and every leak check passes.
 - The macro still works from Keyboard Maestro with no arguments (normal mode). One manual run by a person on the test patient.
 
----
-
-# Task 2 (separate, in the SDM form repo): small form edits
-
-| File | Edit |
-|---|---|
-| `app/index.html` (`<textarea id="notes" autocomplete="off"`) | Add `autocorrect="off" autocapitalize="off" spellcheck="false"`. |
-| `app/index.html` (`placeholder="Describe" autocomplete="off">`) | Add `autocorrect="off" spellcheck="false"`. |
-| `app/sw.js` | `const CACHE = 'sdm-form-v23';` → `'sdm-form-v24'`. |
-| `docs/STAFF_SOP.md` step 11 | Add: "then in Files › Recently Deleted, delete it again (iPad keeps deleted files 30 days)". |
-
-*Why:* the iPad keyboard shouldn't learn words typed about patients, and deleted PDFs shouldn't sit in Recently Deleted for 30 days.

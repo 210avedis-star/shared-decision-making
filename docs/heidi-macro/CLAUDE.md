@@ -1,6 +1,6 @@
 # Heidi macro: rules for Claude Code
 
-Copy this file to the root of the macro project folder on the clinic Mac (next to `heidi_add_session.applescript`).
+This file goes in the `heidi-session/` subfolder of **Clinic Macros**. The root `Clinic Macros/CLAUDE.md` (green zones, the five rules, export-file rules) still applies. This file adds the rules for testing the Heidi session macro.
 
 ## What this project is
 
