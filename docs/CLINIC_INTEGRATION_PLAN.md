@@ -19,7 +19,6 @@ The form keeps everything **in the open page's memory only**:
 
 - **No storage:** no `localStorage`, cookies, database or files written by the form.
 - **No transmission:** there is no server, upload or form submission. A **Content-Security-Policy** in the page also tells the browser to *refuse* any outbound connection, so even an accidental future code change could not send data.
-- **Dictation (🎤 Dictate, v24):** the form turns the spoken words into the procedure on the iPad itself. The speech-to-text is done by iPadOS (Apple's dictation), the same as the keyboard microphone; depending on the iPad and settings, Apple may process that audio on its servers. Dictate only the procedure, never the patient's name, DOB or other identifiers.
 - **Wiped after every visit:** the form clears when you tap *New Patient*, after the PDF is saved, after 20 minutes idle (with a 60-second warning), and when the page is closed.
 - **The only copy of PHI is the PDF.** It's saved under *On My iPad*, AirDropped peer-to-peer (encrypted, no cloud) to the front-desk Mac, uploaded to AdvancedMD (covered by the clinic's BAA), and then deleted from both devices.
 

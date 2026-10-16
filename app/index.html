@@ -192,17 +192,6 @@
   .addon.extra.shown{ display:block; }
   .pick-row{ display:flex; gap:10px; align-items:flex-end; }
   .pick-row .proc-pick{ flex:1; min-width:0; }
-  .procedure-row .dict-btn{ flex:0 0 auto; width:auto; height:auto; padding:7px 12px; border:1.5px solid var(--brand);
-    border-radius:8px; background:#fff; color:var(--brand); font-size:14px; font-weight:700; white-space:nowrap; }
-  .procedure-row .dict-btn.live{ background:#B42318; border-color:#B42318; color:#fff; animation:dictPulse 1.2s infinite; }
-  @keyframes dictPulse{ 50%{ opacity:.7; } }
-  .dict-box{ display:none; border:1.5px solid var(--brand); border-radius:8px; padding:8px 10px; background:#F6F8FC; }
-  .dict-box.open{ display:block; }
-  .dict-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px; }
-  .dict-status{ font-size:12px; color:var(--muted); }
-  .procedure-row .dict-done{ width:auto; height:auto; padding:5px 14px; border:none; border-radius:6px;
-    background:var(--brand); color:#fff; font-size:13px; font-weight:700; }
-  .dict-text{ width:100%; box-sizing:border-box; font-size:15px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; background:#fff; }
   .free-field{ flex:1 1 100% !important; }
   .foreign{ margin-top:8px; border-top:1px solid var(--line); padding-top:6px; }
   .procedure-row .foreign-toggle{ width:auto; height:auto; border:none; background:transparent; color:var(--brand);
@@ -742,174 +731,8 @@ const PROC_TYPES = [
   }
 ];
 
-// Words in the procedure name that are the procedure itself, not add-ons ("dural repair" on Dural Repair).
+// Add-ons that are the procedure itself ("Laminectomy" on Laminectomy), so not offered again.
 const SELF_ADDONS = { 'Laminectomy and Foraminotomy / Foraminotomies':['lam'], 'Dural Repair':['dural'] };
-
-/* ---------- Smart dictation ----------
-   Turns a spoken or typed sentence ("revision T4 to pelvis with BMP, partial removal of
-   previous implants, Ponte osteotomies T10 to L2, about 6 hours") into a procedure, its
-   levels, side, time and add-ons. It runs entirely on this iPad: plain word matching,
-   nothing is sent anywhere, and it is instant.                                          */
-
-// Spoken phrases for each add-on. The ids are tried in order: the first one the chosen
-// procedure has wins; otherwise it comes from another procedure's list.
-const ADDON_PHRASES = [
-  [['partial removal', 'partial hardware removal', 'partial implant removal', 'partially remove', 'remove part of'], ['partial']],
-  [['removal of prior implants', 'removal of previous implants', 'removal of implants', 'removal of hardware', 'removal of prior hardware',
-    'removal of previous hardware', 'removal of instrumentation', 'hardware removal', 'implant removal', 'remove hardware',
-    'remove the hardware', 'remove implants', 'remove the implants', 'remove prior implants', 'remove previous implants'], ['removal']],
-  [['spinal cord stimulator', 'stimulator removal', 'scs'], ['scs']],
-  [['neuromonitoring', 'neuro monitoring', 'nerve monitoring', 'neurophysiologic monitoring', 'evoked potentials', 'evoked potential',
-    'sseps', 'ssep', 'meps', 'mep', 'monitoring'], ['evoke']],
-  [['ponte osteotomies', 'ponte osteotomy', 'ponte', 'pontay', 'ponty', 'pointe osteotom'], ['ponte']],
-  [['pedicle subtraction osteotomy', 'pedicle subtraction', 'pso'], ['pso']],
-  [['quad rod truss', 'quad rods', 'quad rod', 'four rod', 'truss'], ['quad']],
-  [['additional iliac screws', 'bilateral iliac screws', 'iliac screws', 'iliac screw', 'pelvic screws', 's2ai screws', 's2ai'], ['iliac']],
-  [['bone morphogenetic protein', 'bone morphogenic protein', 'bmp', 'infuse'], ['bmp']],
-  [['vertebroplasty', 'pmma', 'cement augmentation', 'cemented screws', 'fenestrated screws', 'cement'], ['pmma']],
-  [['c7 sublaminar band', 'sublaminar band', 'sublaminar bands', 'c7 band', 'fiberwire', 'fiber wire'], ['c7band']],
-  [['o-arm', 'o arm', 'oarm', 'stealth', 'navigation', 'intraoperative ct'], ['oarm']],
-  [['levo', 'head holder'], ['levo']],
-  [['minimally invasive', 'mis'], ['mis']],
-  [['local bone autograft', 'local autograft', 'autograft', 'auto graft', 'local bone'], ['auto']],
-  [['lifenet allograft', 'lifenet', 'life net', 'allograft', 'allo graft'], ['allo']],
-  [['stimulan'], ['stimulan']],
-  [['antibiotic beads', 'antibiotic bead', 'vancomycin beads'], ['beads', 'stimulan']],
-  [['extension', 'extend', 'extending', 'extended'], ['extension', 'ext']],
-  [['dural repair', 'durotomy', 'dural tear', 'dura repair'], ['dural']],
-  [['synthes expedium', 'expedium', 'synthes'], ['expedium']],
-  [['tlif', 't lif', 'transforaminal'], ['tlif']],
-  [['alif', 'a lif', 'anterior lumbar interbody'], ['alif']],
-  [['foraminotomies', 'multiple foraminotomies', 'foraminotomies multiple levels'], ['forams']],
-  [['foraminotomy'], ['foram']],
-  [['laminectomy', 'laminectomies'], ['lam']],
-  [['rand technique', 'rand'], ['rand']],
-  [['gill procedure', 'gill'], ['gill']],
-  [['transverse process trimming', 'transverse process'], ['tptrim']],
-  [['fiber patch'], ['fiber']],
-  [['biodesign patch', 'biodesign', 'bio design'], ['biodesign']],
-  [['duragen', 'dura gen'], ['duragen']],
-  [['surgicel'], ['surgicel']],
-  [['pressure suture', 'pressure stitch'], ['pressure']],
-  [['complex fascia repair', 'fascia repair', 'fascial repair', 'fascial closure', 'fascia'], ['fascia']],
-  [['pulse lavage', 'lavage'], ['lavage']],
-  [['betadine'], ['betadine']],
-  [['drain placement', 'drains', 'drain'], ['drains']],
-  [['wound cultures', 'cultures', 'culture'], ['cultures']]
-];
-
-const NUM_WORDS = { zero:0, one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10,
-  eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15, sixteen:16, seventeen:17, eighteen:18, nineteen:19, twenty:20 };
-
-function dictNormalize(raw){
-  let t = ' ' + raw.toLowerCase().replace(/[–—]/g, '-').replace(/[,;:!?()]|\.(?!\d)/g, ' , ') + ' ';
-  t = t.replace(/\b(an?|one) (hour|hr) and a half\b/g, '1.5 hours');
-  t = t.replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/g, w=>NUM_WORDS[w]);
-  t = t.replace(/\b(\d+) and a half\b/g, (m, n)=>`${n}.5`);
-  t = t.replace(/\b(\d+) and one half\b/g, (m, n)=>`${n}.5`);
-  t = t.replace(/\b(?:sea|see)\s?(\d)/g, 'c$1');           // "see 5" heard for C5
-  t = t.replace(/\btea\s?(\d)/g, 't$1');
-  t = t.replace(/\bel\s?(\d)/g, 'l$1');
-  t = t.replace(/\bes\s?(\d)/g, 's$1');
-  t = t.replace(/\b([ctls])\s*-?\s*(\d{1,2})\b/g, '$1$2');  // "l 4" -> "l4"
-  t = t.replace(/\b([cls])(\d)(\d)\b/g, (m, l, a, b)=>(Number(b) === Number(a) + 1 ? `${l}${a}-${b}` : m)); // "l45" -> "l4-5" (not T: T12 is a level)
-  return t.replace(/\s+/g, ' ');
-}
-
-const LV_ONE = '([ctls])(\\d{1,2})(?![a-z\\d])';
-const LV_END = '(iliac wings?|ilium|pelvis|iliac|sacrum)';
-const LV_RE = new RegExp(`\\b${LV_ONE}(?:\\s*(?:-|to|through|thru|until)\\s*(?:the\\s+)?(?:${LV_ONE}|(\\d{1,2})\\b|${LV_END}))?`, 'g');
-
-function dictLevels(t, skip){
-  const out = [];
-  let m;
-  LV_RE.lastIndex = 0;
-  while((m = LV_RE.exec(t))){
-    if(skip.some(([a, b])=>m.index >= a && m.index < b)) continue;   // e.g. the "C7" in "C7 band"
-    const a = m[1].toUpperCase() + m[2];
-    let txt = a;
-    if(m[3]) txt = m[3] === m[1] ? `${a}-${m[4]}` : `${a}-${m[3].toUpperCase()}${m[4]}`;
-    else if(m[5]) txt = `${a}-${m[5]}`;
-    else if(m[6]) txt = `${a}-${/sacrum/.test(m[6]) ? 'sacrum' : 'iliac wing'}`;
-    out.push({ start:m.index, end:m.index + m[0].length, text:txt });
-  }
-  // two levels said back to back ("L5 S1", "L4 L5") are one range
-  for(let i = out.length - 1; i > 0; i--){
-    const p = out[i-1], c = out[i];
-    if(!/-/.test(p.text) && !/-/.test(c.text) && /^\s*$/.test(t.slice(p.end, c.start))){
-      const [, pl, pn] = p.text.match(/^([CTLS])(\d+)$/), [, cl, cn] = c.text.match(/^([CTLS])(\d+)$/);
-      p.text = pl === cl ? `${pl}${pn}-${cn}` : `${p.text}-${c.text}`;
-      p.end = c.end; out.splice(i, 1);
-    }
-  }
-  return out;
-}
-
-function dictProcedure(t){
-  const idx = name=>PROC_TYPES.findIndex(p=>p.name.startsWith(name));
-  const has = re=>re.test(t);
-  if(has(/\b(irrigation|debridement|i ?(and|&|n) ?d|wash ?out)\b/)) return idx('Irrigation');
-  if(has(/\b(acdf|a c d f|anterior cervical)\b/)) return idx('Anterior Cervical');
-  if(has(/\b(sacroiliac|si joint|s i joint|si fusion|s i fusion)\b/)) return idx('Sacroiliac');
-  if(has(/\b(micro ?discectomy|micro ?disc|discectomy|microdiscectomies)\b/)) return idx('Microdiscectomy');
-  if(has(/\brevision\b/) && !has(/\b(scoliosis|deformity|kyphosis)\b/)) return idx('Revision');
-  if(has(/\b(fusion|instrumentation|scoliosis|kyphosis|deformity|psf|spinal fusion)\b/)) return idx('Posterior');
-  if(has(/\blaminectom(y|ies)\b/)) return idx('Laminectomy');
-  if(has(/\b(dural repair|durotomy|dural tear)\b/)) return idx('Dural Repair');
-  return -1;
-}
-
-/* Returns { type, levels, side:{left,right}, hours, addons:[{ids, start, end, levels, neg}] } */
-function parseDictation(raw){
-  const t = dictNormalize(raw);
-  const res = { type:dictProcedure(t), levels:'', side:{ left:false, right:false }, hours:'', addons:[], revision:/\brevision\b/.test(t) };
-
-  const h = t.match(/\b(\d+(?:\.\d+)?)(?:\s*(?:-|to)\s*(\d+(?:\.\d+)?))?\s*(?:hours?|hrs?)\b/);
-  if(h) res.hours = h[2] ? `${h[1]}-${h[2]}` : h[1];
-
-  // add-on phrases, longest first, never overlapping
-  const taken = [];
-  const phrases = [];
-  ADDON_PHRASES.forEach(([words, ids])=>words.forEach(w=>phrases.push([w, ids])));
-  phrases.sort((a, b)=>b[0].length - a[0].length);
-  phrases.forEach(([w, ids])=>{
-    const re = new RegExp(`\\b${w.replace(/[-]/g, '[- ]?')}\\b`, 'g');
-    let m;
-    while((m = re.exec(t))){
-      const s = m.index, e = s + m[0].length;
-      if(taken.some(([a, b])=>s < b && e > a)) continue;
-      taken.push([s, e]);
-      const before = t.slice(Math.max(0, s - 30), s);
-      const partial = ids[0] === 'removal' && /\bpartial(ly)?\s*$/.test(before);   // "partial removal of previous implants"
-      res.addons.push({ ids:partial ? ['partial'] : ids, start:s, end:e, neg:/\b(no|without|not|skip|minus|hold)\b(\s+[a-z]+){0,2}\s*$/.test(before) });
-    }
-  });
-  res.addons.sort((a, b)=>a.start - b.start);
-  // words that name the chosen procedure itself ("laminectomy" on Laminectomy) are not add-ons
-  const self = res.type >= 0 ? (SELF_ADDONS[PROC_TYPES[res.type].name] || []) : [];
-  res.addons = res.addons.filter(a=>!a.ids.some(id=>self.includes(id)));
-
-  // levels: an add-on's levels follow its words; the rest belong to the procedure
-  const lvs = dictLevels(t, taken);
-  res.addons.forEach((a, i)=>{
-    const next = res.addons[i+1] ? res.addons[i+1].start : t.length;
-    const lv = lvs.find(l=>!l.used && l.start >= a.end && l.start < next && /^[\s,]*(at|from|of|on|over|across|between|levels?|\s)*$/.test(t.slice(a.end, l.start)));
-    if(lv){ lv.used = true; a.levels = lv.text; }
-  });
-  // or levels said just before the add-on ("L4-5 TLIF"), unless that is the procedure's first level
-  res.addons.forEach(a=>{
-    if(a.levels) return;
-    const lv = lvs.find((l, i)=>i > 0 && !l.used && l.end <= a.start && /^\s*$/.test(t.slice(l.end, a.start)));
-    if(lv){ lv.used = true; a.levels = lv.text; }
-  });
-  res.levels = lvs.filter(l=>!l.used).map(l=>l.text).join(', ');
-
-  const sides = t.replace(/\bbilateral iliac\b/g, '');
-  if(/\bbilateral(ly)?\b|\bboth sides\b/.test(sides)) res.side = { left:true, right:true };
-  else res.side = { left:/\bleft\b/.test(sides), right:/\bright\b/.test(sides) };
-  return res;
-}
-
 
 // Each entry: [title (underlined lead-in, exactly as in the paper form, or "" if none), body, optional sub-items array]
 const BENEFITS = [
@@ -1138,7 +961,6 @@ function buildProcedureRow(){
       </select>
       <div class="pick-row">
         <button type="button" class="proc-pick placeholder">Select a procedure…</button>
-        <button type="button" class="dict-btn" aria-label="Dictate the procedure">🎤 Dictate</button>
       </div>
       <div class="proc-menu">
         ${PROC_TYPES.map((p,i)=>`<button type="button" data-i="${i}">${p.name}</button>`).join('')}
@@ -1175,7 +997,6 @@ function buildProcedureRow(){
   const freeName  = inline.querySelector('.proc-free');
   const pick = inline.querySelector('.proc-pick');
   const menu = inline.querySelector('.proc-menu');
-  const dictBtn = inline.querySelector('.dict-btn');
   pick.addEventListener('click', ()=>{
     // as wide as the screen allows (up to 760 px) without running off the right edge
     menu.style.width = Math.min(760, window.innerWidth - pick.getBoundingClientRect().left - 16) + 'px';
@@ -1204,23 +1025,10 @@ function buildProcedureRow(){
     compose();
   });
 
-  // --- dictation strip (shown under the procedure line while dictating) ---
-  const dict = document.createElement('div');
-  dict.className = 'dict-box';
-  dict.innerHTML = `
-    <div class="dict-head">
-      <span class="dict-status">Say the procedure, levels, add-ons and time.</span>
-      <button type="button" class="dict-done">Done</button>
-    </div>
-    <textarea class="dict-text" rows="2" placeholder="e.g. Revision T4 to pelvis with BMP, partial removal of previous implants, Ponte osteotomies T10 to L2, 6 hours" autocomplete="off"></textarea>`;
-  const dictText = dict.querySelector('.dict-text');
-  const dictStatus = dict.querySelector('.dict-status');
-
   const panel = document.createElement('div');
   panel.className = 'addon-panel';
 
   editor.appendChild(inline);
-  editor.appendChild(dict);
   editor.appendChild(panel);
 
   const summary = document.createElement('div');
@@ -1417,119 +1225,13 @@ function buildProcedureRow(){
   hours.addEventListener('input', compose);
   freeName.addEventListener('input', compose);
 
-  // ---------- dictation ----------
-  // Fills the row from what was said, from scratch each time, so the result always matches the words.
-  function applyDictation(text){
-    const r = parseDictation(text);
-    let ti = r.type;
-    if(ti < 0) ti = select.value === '' ? -1 : Number(select.value);   // only add-ons said: keep the procedure
-    if(ti < 0){ dictStatus.textContent = 'Say which procedure (for example "revision fusion T4 to pelvis").'; return; }
-    if(select.value !== String(ti) || r.type >= 0){
-      select.value = String(ti);
-      select.dispatchEvent(new Event('change'));
-    }
-    const type = PROC_TYPES[ti];
-    if(!type.noLevels) levels.value = r.levels;
-    hours.value = r.hours;
-    if(type.sides) setSides(r.side.left, r.side.right);
-
-    const has = key=>panel.querySelector(`input[data-id="${key}"]`);
-    const setBox = (key, on, lv)=>{
-      const cb = has(key); if(!cb) return;
-      cb.checked = on;
-      const w = cb.closest('.addon');
-      w.classList.toggle('on', on);
-      const d = w.querySelector('.detail.lv-input');
-      if(d && lv) d.value = lv;
-    };
-    if(ti === PROC_TYPES.findIndex(p=>p.unlockFrom) && r.revision) setBox('revision', true);
-    if(type.addons.some(a=>a.prefix)){                 // microdiscectomy: Left / Right add-ons
-      setBox('left', r.side.left); setBox('right', r.side.right);
-    }
-    r.addons.forEach(a=>{
-      // the procedure's own add-on first, then the same add-on from another procedure
-      let key = a.ids.find(id=>has(id));
-      if(!key){
-        for(const id of a.ids){
-          const ti2 = PROC_TYPES.findIndex(p=>p.addons.some(x=>x.id === id) && has(`${PROC_TYPES.indexOf(p)}.${id}`));
-          if(ti2 >= 0){ key = `${ti2}.${id}`; break; }
-        }
-      }
-      if(key) setBox(key, !a.neg, a.levels);
-    });
-    // "partial removal" replaces the full removal that Revision checks by default
-    if(r.addons.some(a=>a.ids[0] === 'partial' && !a.neg) && !r.addons.some(a=>a.ids[0] === 'removal')) setBox('removal', false);
-    syncExtras();
-    syncOthers();
-    compose();
-    dictStatus.textContent = summary.textContent ? 'Check the procedure below. Keep talking to change it.' : '';
-  }
-
-  let applyTimer = 0;
-  dictText.addEventListener('input', ()=>{
-    clearTimeout(applyTimer);
-    applyTimer = setTimeout(()=>applyDictation(dictText.value), 250);
-  });
-
-  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let rec = null, finalText = '';
-  function stopListening(){ if(rec){ rec.onend = null; try{ rec.stop(); }catch(e){} rec = null; } dictBtn.classList.remove('live'); }
-  function listen(){
-    stopListening();
-    rec = new Speech();
-    rec.lang = 'en-US';
-    rec.interimResults = true;
-    rec.continuous = true;
-    finalText = dictText.value ? dictText.value.trim() + ' ' : '';
-    rec.onresult = e=>{
-      let interim = '';
-      for(let i = e.resultIndex; i < e.results.length; i++){
-        if(e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
-        else interim += e.results[i][0].transcript;
-      }
-      dictText.value = (finalText + interim).trim();
-      applyDictation(dictText.value);
-    };
-    rec.onerror = e=>{
-      dictStatus.textContent = e.error === 'not-allowed'
-        ? 'Microphone not allowed. Tap in the box and use the 🎤 key on the keyboard instead.'
-        : 'Didn’t catch that. Tap 🎤 Dictate to try again, or type in the box.';
-    };
-    rec.onend = ()=>{ rec = null; dictBtn.classList.remove('live'); };
-    try{
-      rec.start();
-      dictBtn.classList.add('live');
-      dictStatus.textContent = 'Listening… say the procedure, levels, add-ons and time.';
-    }catch(e){
-      rec = null;
-      dictText.focus();
-    }
-  }
-  dictBtn.addEventListener('click', ()=>{
-    menu.classList.remove('open');
-    if(rec){ stopListening(); dictStatus.textContent = 'Stopped. Tap 🎤 Dictate to add more.'; return; }
-    dict.classList.add('open');
-    openPanel();
-    if(Speech) listen();
-    else{
-      dictStatus.textContent = 'Tap the 🎤 key on the keyboard and speak, or type.';
-      dictText.focus();
-    }
-  });
-  dict.querySelector('.dict-done').addEventListener('click', ()=>{
-    stopListening();
-    clearTimeout(applyTimer);
-    if(dictText.value.trim()) applyDictation(dictText.value);
-    dict.classList.remove('open');
-  });
-
   // click back into the procedure fields (or the built name) to reopen the list
   [levels, hours, summary].forEach(el=>el.addEventListener('click', openPanel));
 
   // clicking anywhere outside this row closes the list and writes the name
   document.addEventListener('click', e=>{
     if(!e.target.closest('.proc-field') || !row.contains(e.target)) menu.classList.remove('open');
-    if(!row.contains(e.target) && panel.classList.contains('open')){ stopListening(); closePanel(); }
+    if(!row.contains(e.target) && panel.classList.contains('open')) closePanel();
   });
 
   return row;
