@@ -167,11 +167,38 @@
   .proc-inline .proc-field{ flex:4 1 300px; }
   .proc-inline .lv-field{ flex:1 1 150px; max-width:200px; }
   .proc-inline .hrs-field{ flex:0 1 120px; }
-  .proc-inline .side-field{ flex:0 0 auto; }
-  .side-btns{ display:flex; gap:6px; padding:2px 0; }
-  .side-btn{ border:1px solid var(--brand-light); background:#fff; color:var(--brand); border-radius:6px;
-    padding:6px 12px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; }
-  .side-btn.on{ background:var(--brand); color:#fff; border-color:var(--brand); }
+  .proc-inline .side-field{ flex:0 0 auto; min-width:max-content; }
+  .side-btns{ display:flex; flex-wrap:nowrap; gap:10px; padding:2px 0; }
+  .procedure-row .side-btn{ flex:0 0 auto; width:44px; height:38px; border:1.5px solid var(--brand-light); background:#fff;
+    color:var(--brand); border-radius:6px; padding:0; font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; }
+  .procedure-row .side-btn.on{ background:var(--brand); color:#fff; border-color:var(--brand); }
+  /* procedure picker: a wide list with bold lines between procedures (easier to read than the iPad's own menu) */
+  .proc-field{ position:relative; }
+  .proc-select{ display:none; }
+  .procedure-row .proc-pick{ width:100%; height:auto; text-align:left; font-size:15px; padding:5px 22px 5px 0; border:none;
+    border-bottom:1px solid var(--line); background:transparent no-repeat right 2px center; color:var(--ink);
+    font-family:inherit; cursor:pointer; white-space:normal;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23767676'><path d='M5.5 7.5l4.5 4.5 4.5-4.5z'/></svg>"); }
+  .procedure-row .proc-pick.placeholder{ color:var(--muted); }
+  .proc-menu{ display:none; position:absolute; z-index:60; top:100%; left:0; margin-top:4px;
+    max-height:70vh; overflow:auto; background:#fff;
+    border:2px solid var(--ink); border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.18); }
+  .proc-menu.open{ display:block; }
+  .procedure-row .proc-menu button{ display:block; width:100%; height:auto; text-align:left; border:none; background:#fff; color:var(--ink);
+    font-family:inherit; font-size:16px; padding:14px 16px; cursor:pointer; border-bottom:3px solid #333; }
+  .procedure-row .proc-menu button:last-child{ border-bottom:none; }
+  .procedure-row .proc-menu button.on{ background:var(--brand); color:#fff; }
+  .addon.extra{ display:none; }
+  .addon.extra.shown{ display:block; }
+  .pick-row{ display:flex; gap:10px; align-items:flex-end; }
+  .pick-row .proc-pick{ flex:1; min-width:0; }
+  .free-field{ flex:1 1 100% !important; }
+  .foreign{ margin-top:8px; border-top:1px solid var(--line); padding-top:6px; }
+  .procedure-row .foreign-toggle{ width:auto; height:auto; border:none; background:transparent; color:var(--brand);
+    font-size:13px; font-weight:700; padding:4px 0; }
+  .foreign-name{ font-size:11px; font-weight:700; color:var(--muted); margin:8px 0 3px; }
+  .foreign:not(.open) .foreign-name, .foreign:not(.open) .addon:not(.on){ display:none; }
+  .foreign:not(.open) .foreign-group .addon-grid{ gap:0 16px; }
   .unit-wrap{ display:flex; align-items:baseline; gap:6px; border-bottom:1px solid var(--line); }
   .unit-wrap:focus-within{ border-bottom-color:var(--brand); }
   .unit-wrap input[type=text]{ flex:1; min-width:0; border-bottom:none; }
@@ -571,8 +598,9 @@ const OTHER = { id:'other', label:'Other', text:'', free:true };
 const PROC_TYPES = [
   {
     name:'Posterior Instrumentation and Fusion (Scoliosis / Deformity / Kyphosis)',
-    build:lv=>`Posterior ${lv} instrumentation and fusion`,
+    build:(lv, side, words)=>`Posterior ${lv} ${words.join(' ')} instrumentation and fusion`,
     levelPh:'T9-L1, L4-iliac wing',
+    unlockFrom:'Revision Instrumentation and Fusion',   // Revision or Extension adds that list's extra add-ons
     defaults:['evoke','auto','allo'],
     addons:[
       { id:'evoke',    label:'Evoked potential neuromonitoring (SSEP/MEP)', text:'evoked potential neuromonitoring (SSEP/MEP)' },
@@ -587,6 +615,8 @@ const PROC_TYPES = [
       { id:'lam',      label:'Laminectomy',                  text:'laminectomy', lv:true },
       { id:'oarm',     label:'O-arm with Stealth and navigation', text:'O-arm with Stealth and navigation' },
       { id:'rand',     label:'Rand technique',               text:'Rand technique' },
+      { id:'revision', label:'Revision',                     text:'revision', nameWord:true, unlock:true },
+      { id:'extension',label:'Extension',                    text:'extension', unlock:true },
       OTHER
     ]
   },
@@ -605,6 +635,7 @@ const PROC_TYPES = [
       { id:'pso',      label:'Pedicle subtraction osteotomy (PSO)', text:'pedicle subtraction osteotomy (PSO)' },
       { id:'c7band',   label:'C7 sublaminar band (Globus or FiberWire)', text:'C7 sublaminar band (Globus or FiberWire)' },
       { id:'removal',  label:'Removal of prior implants',    text:'removal of prior implants' },
+      { id:'partial',  label:'Partial removal of previous implants', text:'partial removal of previous implants' },
       { id:'scs',      label:'Spinal cord stimulator removal (SCS)', text:'spinal cord stimulator removal' },
       { id:'oarm',     label:'O-arm with Stealth navigation (3D intraoperative CT)', text:'O-arm with Stealth navigation (3D intraoperative CT)' },
       { id:'levo',     label:'Levo cervical head holder',    text:'Levo cervical head holder' },
@@ -655,7 +686,7 @@ const PROC_TYPES = [
   },
   {
     name:'Sacroiliac (SI) Joint Fusion',
-    sides:['Left', 'Right', 'Bilateral'],
+    sides:[['Right','R'], ['Left','L']],   // both selected reads as "Bilateral"
     build:(lv, side)=>`${side ? side + ' ' : ''}sacroiliac (SI) joint fusion`,
     noLevels:true,
     defaults:[],
@@ -689,8 +720,19 @@ const PROC_TYPES = [
       { id:'cultures', label:'Intraoperative wound cultures',text:'intraoperative wound cultures' },
       OTHER
     ]
+  },
+  {
+    name:'Other (type the procedure)',
+    free:true,                       // the procedure name is typed; every add-on list is offered
+    build:(lv, side, words, typed)=>typed,
+    noLevels:true,
+    defaults:[],
+    addons:[ OTHER ]
   }
 ];
+
+// Add-ons that are the procedure itself ("Laminectomy" on Laminectomy), so not offered again.
+const SELF_ADDONS = { 'Laminectomy and Foraminotomy / Foraminotomies':['lam'], 'Dural Repair':['dural'] };
 
 // Each entry: [title (underlined lead-in, exactly as in the paper form, or "" if none), body, optional sub-items array]
 const BENEFITS = [
@@ -917,6 +959,12 @@ function buildProcedureRow(){
         <option value="">Select a procedure…</option>
         ${PROC_TYPES.map((p,i)=>`<option value="${i}">${p.name}</option>`).join('')}
       </select>
+      <div class="pick-row">
+        <button type="button" class="proc-pick placeholder">Select a procedure…</button>
+      </div>
+      <div class="proc-menu">
+        ${PROC_TYPES.map((p,i)=>`<button type="button" data-i="${i}">${p.name}</button>`).join('')}
+      </div>
     </div>
     <div class="field lv-field" style="display:none">
       <label class="f-label">Levels</label>
@@ -932,6 +980,10 @@ function buildProcedureRow(){
         <input type="text" class="proc-hours lv-input" data-kp="hours" placeholder="5.5" inputmode="none" autocomplete="off" autocorrect="off" spellcheck="false">
         <span class="unit">hours</span>
       </div>
+    </div>
+    <div class="field free-field" style="display:none">
+      <label class="f-label">Procedure</label>
+      <input type="text" class="proc-free" placeholder="Type the procedure" autocomplete="off">
     </div>`;
 
   const select  = inline.querySelector('.proc-select');
@@ -941,11 +993,35 @@ function buildProcedureRow(){
   const hours   = inline.querySelector('.proc-hours');
   const sideField = inline.querySelector('.side-field');
   const sideBtns  = inline.querySelector('.side-btns');
+  const freeField = inline.querySelector('.free-field');
+  const freeName  = inline.querySelector('.proc-free');
+  const pick = inline.querySelector('.proc-pick');
+  const menu = inline.querySelector('.proc-menu');
+  pick.addEventListener('click', ()=>{
+    // as wide as the screen allows (up to 760 px) without running off the right edge
+    menu.style.width = Math.min(760, window.innerWidth - pick.getBoundingClientRect().left - 16) + 'px';
+    menu.classList.toggle('open');
+    openPanel();
+  });
+  menu.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    menu.classList.remove('open');
+    if(select.value === b.dataset.i) return;
+    select.value = b.dataset.i;
+    select.dispatchEvent(new Event('change'));
+  });
+
+  // Side boxes can be tapped on and off independently; both on reads as "Bilateral".
   let side = '';
+  function setSides(left, right){
+    sideBtns.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.side === 'Left' ? left : right));
+    side = left && right ? 'Bilateral' : left ? 'Left' : right ? 'Right' : '';
+  }
   sideBtns.addEventListener('click', e=>{
     const b = e.target.closest('button'); if(!b) return;
-    side = side === b.dataset.side ? '' : b.dataset.side;       // tap again to unselect
-    sideBtns.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.side === side));
+    b.classList.toggle('on');
+    const on = s=>!!sideBtns.querySelector(`button.on[data-side="${s}"]`);
+    setSides(on('Left'), on('Right'));
     compose();
   });
 
@@ -968,20 +1044,110 @@ function buildProcedureRow(){
     return select.value === '' ? null : PROC_TYPES[Number(select.value)];
   }
 
-  function renderPanel(type){
-    panel.innerHTML = `
-      <div class="panel-title">Add-ons — ${type.name}</div>
-      <div class="addon-grid">
-        ${type.addons.map(a=>`
-          <div class="addon${a.free ? ' other' : ''}${type.defaults.includes(a.id) ? ' on' : ''}" data-addon="${a.id}">
+  // Add-ons this procedure shows in its own list: its own, plus (for types with unlockFrom) the
+  // other list's add-ons it doesn't already have, hidden until an `unlock` box is checked.
+  function addonDefs(type){
+    const own = type.addons.filter(a=>!a.free);
+    let extras = [];
+    if(type.unlockFrom){
+      const ids = new Set(own.map(a=>a.id));
+      const words = new Set(own.map(a=>a.text.toLowerCase()));
+      extras = PROC_TYPES.find(p=>p.name === type.unlockFrom).addons
+        .filter(a=>!a.free && !ids.has(a.id) && !words.has(a.text.toLowerCase()))
+        .map(a=>({ ...a, extra:true }));
+    }
+    return [...own, ...extras];
+  }
+  // Every other procedure's add-ons, so any add-on can go on any procedure.
+  // Keyed "typeIndex.id"; repeats of an add-on already offered are left out.
+  function foreignGroups(type){
+    const seen = new Set(addonDefs(type).flatMap(a=>[a.id, a.text.toLowerCase()]));
+    (SELF_ADDONS[type.name] || []).forEach(id=>seen.add(id));
+    const groups = [];
+    PROC_TYPES.forEach((p, ti)=>{
+      if(p === type || p.free) return;
+      const items = p.addons.filter(a=>!a.free && !a.prefix && !a.unlock && !seen.has(a.id) && !seen.has(a.text.toLowerCase()))
+        .map(a=>({ ...a, key:`${ti}.${a.id}`, foreign:true }));
+      items.forEach(a=>{ seen.add(a.id); seen.add(a.text.toLowerCase()); });
+      if(items.length) groups.push({ name:p.name, items });
+    });
+    return groups;
+  }
+  function defFor(key){
+    if(/^other\d*$/.test(key)) return OTHER;
+    if(key.includes('.')){
+      const [ti, id] = key.split('.');
+      return PROC_TYPES[Number(ti)].addons.find(a=>a.id === id);
+    }
+    return addonDefs(currentType()).find(a=>a.id === key);
+  }
+  function addonHtml(a, type){
+    const key = a.key || a.id;
+    const on = !a.extra && !a.foreign && type.defaults.includes(a.id);
+    return `
+          <div class="addon${a.free ? ' other' : ''}${a.extra ? ' extra' : ''}${on ? ' on' : ''}" data-addon="${key}">
             <label>
-              <input type="checkbox" data-id="${a.id}"${type.defaults.includes(a.id) ? ' checked' : ''}>
+              <input type="checkbox" data-id="${key}"${on ? ' checked' : ''}>
               <span>${a.label}</span>
               ${a.lv ? '<input type="text" class="detail lv-input" placeholder="Levels" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">' : ''}
             </label>
             ${a.free ? '<input type="text" class="detail" placeholder="Describe" autocomplete="off">' : ''}
+          </div>`;
+  }
+  function renderPanel(type){
+    const groups = foreignGroups(type);
+    panel.innerHTML = `
+      <div class="panel-title">Add-ons — ${type.free ? 'Other procedure' : type.name}</div>
+      <div class="addon-grid own-grid">
+        ${addonDefs(type).map(a=>addonHtml(a, type)).join('')}
+        ${addonHtml({ ...OTHER, id:'other' }, type)}
+      </div>
+      <div class="foreign${type.free ? ' open' : ''}">
+        <button type="button" class="foreign-toggle">${type.free ? '−' : '+'} Add-ons from other procedures</button>
+        ${groups.map(g=>`
+          <div class="foreign-group">
+            <div class="foreign-name">${g.name}</div>
+            <div class="addon-grid">${g.items.map(a=>addonHtml(a, type)).join('')}</div>
           </div>`).join('')}
       </div>`;
+  }
+  panel.addEventListener('click', e=>{
+    const t = e.target.closest('.foreign-toggle'); if(!t) return;
+    const f = t.parentElement;
+    f.classList.toggle('open');
+    t.textContent = (f.classList.contains('open') ? '− ' : '+ ') + 'Add-ons from other procedures';
+  });
+
+  // Unlocked extras show while any `unlock` box is checked, or while they are checked themselves.
+  // Turning the last unlock box off clears them.
+  function syncExtras(changed){
+    const type = currentType(); if(!type || !type.unlockFrom) return;
+    const unlocked = type.addons.some(a=>a.unlock && panel.querySelector(`input[data-id="${a.id}"]`).checked);
+    const turnedOff = changed && !unlocked && type.addons.some(a=>a.unlock && a.id === changed.dataset.id);
+    panel.querySelectorAll('.addon.extra').forEach(w=>{
+      const cb = w.querySelector('input[type=checkbox]');
+      if(turnedOff){
+        w.classList.remove('on');
+        cb.checked = false;
+        w.querySelectorAll('.detail').forEach(d=>{ d.value = ''; });
+      }
+      w.classList.toggle('shown', unlocked || cb.checked);
+    });
+  }
+
+  // Every checked "Other" gets a fresh, unchecked "Other" below it; extra empty ones are removed.
+  function syncOthers(){
+    const grid = panel.querySelector('.own-grid'); if(!grid) return;
+    const others = [...grid.querySelectorAll('.addon.other')];
+    let last = -1;
+    others.forEach((w,i)=>{ if(w.querySelector('input[type=checkbox]').checked) last = i; });
+    others.slice(last + 2).forEach(w=>w.remove());
+    if(last === others.length - 1){
+      const ids = others.map(w=>Number(w.dataset.addon.slice(5)) || 1);
+      const tmp = document.createElement('div');
+      tmp.innerHTML = addonHtml({ ...OTHER, id:'other' + (Math.max(...ids) + 1) }, currentType());
+      grid.appendChild(tmp.firstElementChild);
+    }
   }
 
   function compose(){
@@ -992,22 +1158,21 @@ function buildProcedureRow(){
       return;
     }
     const lv = levels.value.trim();
-    let name = type.build(lv, side).replace(/\s+/g,' ').trim();
-    name = name.charAt(0).toUpperCase() + name.slice(1);
-
-    const parts = [], before = [];
-    type.addons.forEach(a=>{
-      const wrap = panel.querySelector(`.addon[data-addon="${a.id}"]`);
-      if(!wrap || !wrap.querySelector('input[type=checkbox]').checked) return;
+    const parts = [], before = [], words = [];
+    panel.querySelectorAll('.addon').forEach(wrap=>{
+      const a = defFor(wrap.dataset.addon);
+      if(!a || !wrap.querySelector('input[type=checkbox]').checked) return;
       if(a.prefix){ before.push(a.text); return; }     // e.g. Left / Right go in front of the name
+      if(a.nameWord){ words.push(a.text); return; }    // e.g. "revision" goes inside the name
       const detailEl = wrap.querySelector('.detail');
       const d = detailEl ? detailEl.value.trim() : '';
       if(a.free){ if(d) parts.push(d); return; }
       parts.push(a.lv && d ? `${a.text} at ${d}` : a.text);
     });
+    let name = type.build(lv, side, words, freeName.value.trim()).replace(/\s+/g,' ').trim();
     if(before.length) name = before.join(' and ') + ' ' + name;
     name = name.charAt(0).toUpperCase() + name.slice(1);
-    if(parts.length) name += ' with ' + parts.join(', ');
+    if(parts.length) name += (name ? ' with ' : 'With ') + parts.join(', ');
 
     const h = withHourUnits(hours.value);
     if(h) name += ` (${h})`;
@@ -1021,20 +1186,26 @@ function buildProcedureRow(){
 
   select.addEventListener('change', ()=>{
     const type = currentType();
+    pick.classList.toggle('placeholder', !type);
+    menu.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.i === select.value));
     if(type){
+      pick.textContent = type.free ? 'Other' : type.name;
       renderPanel(type);
       levels.placeholder = type.levelPh || '';
       lvField.style.display = type.noLevels ? 'none' : '';
       if(type.noLevels) levels.value = '';
       side = '';
-      sideBtns.innerHTML = (type.sides || []).map(s=>`<button type="button" class="side-btn" data-side="${s}">${s}</button>`).join('');
+      sideBtns.innerHTML = (type.sides || []).map(([s, l])=>`<button type="button" class="side-btn" data-side="${s}" aria-label="${s}">${l}</button>`).join('');
       sideField.style.display = type.sides ? '' : 'none';
+      freeField.style.display = type.free ? '' : 'none';
       hrsField.style.display = '';
       openPanel();
     }else{
       panel.innerHTML = '';
+      pick.textContent = 'Select a procedure…';
       lvField.style.display = 'none';
       sideField.style.display = 'none';
+      freeField.style.display = 'none';
       hrsField.style.display = 'none';
       closePanel();
     }
@@ -1044,19 +1215,22 @@ function buildProcedureRow(){
   panel.addEventListener('change', e=>{
     if(e.target.matches('input[type=checkbox][data-id]')){
       e.target.closest('.addon').classList.toggle('on', e.target.checked);
+      syncExtras(e.target);
+      syncOthers();
     }
     compose();
   });
   panel.addEventListener('input', compose);
   levels.addEventListener('input', compose);
   hours.addEventListener('input', compose);
+  freeName.addEventListener('input', compose);
 
   // click back into the procedure fields (or the built name) to reopen the list
   [levels, hours, summary].forEach(el=>el.addEventListener('click', openPanel));
-  select.addEventListener('mousedown', openPanel);
 
   // clicking anywhere outside this row closes the list and writes the name
   document.addEventListener('click', e=>{
+    if(!e.target.closest('.proc-field') || !row.contains(e.target)) menu.classList.remove('open');
     if(!row.contains(e.target) && panel.classList.contains('open')) closePanel();
   });
 
@@ -1161,7 +1335,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '23';
+const FORM_VERSION = '24';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
