@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Home Screen launcher for the Google (Save and send) version of the SDM form.
+     Google's page has no Home Screen icon, so the iPads add this page instead: it shows the
+     Hey Clinic SDM icon and, opened from the Home Screen, goes straight to the form in the clinic's Apps Script project. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'sha256-p9J6u+DNA+CsAyCx9Sq3vAVY0wS35tw28tA7iTeEoUg='; base-uri 'none'; form-action 'none'">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SDM">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>SDM</title>
+<style>
+  body{margin:0;font:600 18px -apple-system,system-ui,sans-serif;color:#123298;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:18px;text-align:center;padding:0 16px}
+  a{color:#fff;background:#123298;padding:14px 28px;border-radius:10px;text-decoration:none}
+</style>
+</head>
+<body>
+<img src="apple-touch-icon.png" width="120" height="120" alt="Hey Clinic SDM">
+<div id="msg">To add it: tap <b>Share</b>, then <b>Add to Home Screen</b>.</div>
+<a id="go" href="https://script.google.com/a/macros/heyclinic.com/s/AKfycbxtIFF55AuGEm-dp8jYwAEdA8WoLqDk8ADXuVmK7j0TB8fsS7ZGX3IuEGC-SlNLDn8/exec?app=sdm">Open SDM form</a>
+<script>if(navigator.standalone){document.getElementById('msg').textContent='Opening the SDM form…';location.replace(document.getElementById('go').href);}</script>
+</body>
+</html>
