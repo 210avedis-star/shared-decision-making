@@ -1335,7 +1335,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '26';
+const FORM_VERSION = '27';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1752,9 +1752,9 @@ async function savePdf(){
       const res = await gasCall('sdmSend', await fileToBase64(pdfFile), info);
       overlay.classList.remove('show'); overlay.textContent = 'Creating PDF…';
       document.getElementById('afterTitle').textContent = 'Sent to the chart';
-      document.getElementById('afterHint').innerHTML = '<b></b><br>The front desk Mac uploads it to the AdvancedMD chart. You can clear the form for the next patient.';
+      document.getElementById('afterHint').innerHTML = '<b></b><br>The front desk Mac uploads it to the AdvancedMD chart. Tap <b>Print / Export</b> for AirDrop or printing (close that PDF tab when done), then clear the form for the next patient.';
       document.querySelector('#afterHint b').textContent = res && res.name || pdfFile.name;
-      document.getElementById('pdfShare').closest('.actions').style.display = 'none';
+      document.getElementById('pdfShare').textContent = 'Print / Export';
       document.getElementById('afterModal').classList.add('show');
       return;
     }catch(err){
@@ -1793,6 +1793,13 @@ function downloadPdf(){
 // The share sheet needs its own tap, so it opens from the "PDF ready" box.
 document.getElementById('pdfShare').addEventListener('click', async ()=>{
   if(!pdfFile) return;
+  if(GAS){
+    // Google's page blocks the share sheet, so open the PDF in its own tab: Safari's Share button there has AirDrop and Print
+    const url = URL.createObjectURL(pdfFile);
+    const tab = window.open(url, '_blank');
+    setTimeout(()=>URL.revokeObjectURL(url), 120000);
+    if(tab) return;
+  }
   if(navigator.canShare && navigator.canShare({ files:[pdfFile] })){
     try{ await navigator.share({ files:[pdfFile] }); }
     catch(err){ if(err.name !== 'AbortError') downloadPdf(); }
