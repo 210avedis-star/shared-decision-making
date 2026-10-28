@@ -55,6 +55,7 @@
       margin:0 0 8px; }
   h2.risk{ color:var(--risk); }
   .section-note{ font-size:11px; color:var(--muted); margin:0 0 10px; }
+  .section-note.not-consent{ font-weight:700; color:var(--ink); }
 
   .fields{ display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
   .fields.patient-row{ grid-template-columns:1.5fr 1fr 1fr; gap:10px 14px; }
@@ -454,6 +455,7 @@
   <section class="consent">
     <h2>Consent</h2>
     <div class="section-note">I state that I am fully competent and have read (or had read to me) and understand this consent, and that all of my questions about the procedure(s), alternate procedure(s), anesthesia, and risks have been answered to my satisfaction in language I understand, and that all blanks were filled in prior to my signature.</div>
+    <div class="section-note not-consent"><b>Please note:</b> This form documents the shared decision-making discussion about your surgery. It is not the consent for surgery. The surgical consent will be reviewed and signed in the pre-operative area on the day of surgery.</div>
 
     <label class="f-label">Patient signature (or authorized representative)</label>
     <div class="sig-pad-wrap">
@@ -1329,7 +1331,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '27';
+const FORM_VERSION = '28';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1628,6 +1630,8 @@ function buildSimplePdf(){
   heading('Consent');
   const note = document.querySelector('section.consent .section-note');
   if(note) write(note.textContent.replace(/\s+/g, ' ').trim(), { size:8.5 });
+  const notConsent = document.querySelector('section.consent .not-consent');
+  if(notConsent) write(notConsent.textContent.replace(/\s+/g, ' ').trim(), { size:8.5, bold:true });
   [['padPatient', 'Patient signature (or authorized representative)', 'sigPatientName', 'whenPatient'],
    ['padWitness', 'Witness signature', null, 'whenWitness'],
    ['padPhysician', 'Physician signature', 'sigPhysicianName', 'whenPhysician']].forEach(([pad, label, nameId, whenId])=>{
