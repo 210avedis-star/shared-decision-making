@@ -106,3 +106,11 @@ HIPAA compliance belongs to the clinic as a whole (risk analysis, policies, trai
 ## v18: PDF built by the form
 
 iPad Safari's print added the web address, print date and a page counter to every page, and laid the form out differently (3–4 pages). Since v18 the form draws its own two-page letter PDF on the iPad (using the open-source html2canvas and jsPDF libraries stored in `app/vendor/`, which work offline and make no network requests). The PDF has the patient footer and "Page X of 2" on every page and nothing else. It stays in memory until shared through the iPad share sheet (AirDrop / Save to Files), and is gone when the form clears.
+
+---
+
+## v26: Google version with "Save and send" (optional)
+
+The same form can also run inside the clinic's signed-in Google page (the Brace Forms Apps Script project, `<web app URL>?app=sdm`), built from `app/index.html` by `tools/build_gas.py` into `gas/Sdm.html`. There **Save and send** puts the PDF in the `_SDM Upload Queue` folder of the clinic's Google Drive, named `Last, First - DOB YYYY-MM-DD - SDM #<chart> - <date>.pdf`, and the front desk Mac's upload macro files it in that AdvancedMD chart and removes it from the queue. Only signed-in clinic accounts can open the page or add files.
+
+This copy does send the PDF (to the clinic's Google Workspace, like the bracing forms), so it is not covered by §1's "no transmission". It does not work offline. The offline iPad app in `app/` is unchanged.

@@ -58,6 +58,7 @@
       margin:0 0 8px; }
   h2.risk{ color:var(--risk); }
   .section-note{ font-size:11px; color:var(--muted); margin:0 0 10px; }
+  .section-note.not-consent{ font-weight:700; color:var(--ink); }
 
   .fields{ display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
   .fields.patient-row{ grid-template-columns:1.5fr 1fr 1fr; gap:10px 14px; }
@@ -457,6 +458,7 @@
   <section class="consent">
     <h2>Consent</h2>
     <div class="section-note">I state that I am fully competent and have read (or had read to me) and understand this consent, and that all of my questions about the procedure(s), alternate procedure(s), anesthesia, and risks have been answered to my satisfaction in language I understand, and that all blanks were filled in prior to my signature.</div>
+    <div class="section-note not-consent"><b>Please note:</b> This form documents the shared decision-making discussion about your surgery. It is not the consent for surgery. The surgical consent will be reviewed and signed in the pre-operative area on the day of surgery.</div>
 
     <label class="f-label">Patient signature (or authorized representative)</label>
     <div class="sig-pad-wrap">
@@ -504,7 +506,7 @@
   <div class="modal" id="afterModal" role="dialog" aria-modal="true" aria-labelledby="afterTitle">
     <div class="modal-card">
       <h3 id="afterTitle">PDF ready</h3>
-      <p class="hint"><b id="pdfName"></b><br>Tap <b>Share</b>, then choose <b>AirDrop</b> (front-desk Mac) or <b>Save to Files</b> (On My iPad › SDM Export). When it's sent, clear the form so no patient information stays on this iPad.</p>
+      <p class="hint" id="afterHint"><b id="pdfName"></b><br>Tap <b>Share</b>, then choose <b>AirDrop</b> (front-desk Mac) or <b>Save to Files</b> (On My iPad › SDM Export). When it's sent, clear the form so no patient information stays on this iPad.</p>
       <div class="actions">
         <button class="btn btn-primary" id="pdfShare" type="button">Share PDF…</button>
       </div>
@@ -1335,7 +1337,7 @@ updateProgress();
 document.getElementById('procedureList').appendChild(buildProcedureRow());
 
 /* Bump on every change to the form so each iPad (and each printed PDF) shows which version was used. */
-const FORM_VERSION = '25';
+const FORM_VERSION = '28';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function localDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }  // iPad's local date, not UTC
@@ -1369,6 +1371,7 @@ document.getElementById('patientName').addEventListener('input', ()=>{
    Everything lives only in this page's memory, so reloading wipes it completely. */
 function wipeForm(){
   document.querySelectorAll('input, textarea').forEach(el=>{ el.value = ''; });
+  if(GAS){ gasWipe(); return; }
   location.replace(location.pathname);
 }
 document.getElementById('newPatientBtn').addEventListener('click', ()=>{
@@ -1376,7 +1379,7 @@ document.getElementById('newPatientBtn').addEventListener('click', ()=>{
 });
 // Leaving or closing the page wipes it; if iOS restores it from cache, reload a blank copy.
 window.addEventListener('pagehide', ()=>{ document.querySelectorAll('input, textarea').forEach(el=>{ el.value = ''; }); });
-window.addEventListener('pageshow', e=>{ if(e.persisted) location.replace(location.pathname); });
+window.addEventListener('pageshow', e=>{ if(e.persisted) wipeForm(); });
 
 /* Idle auto-clear: after 20 minutes with no touch, warn for 60 s, then wipe. */
 (function(){
@@ -1633,6 +1636,8 @@ function buildSimplePdf(){
   heading('Consent');
   const note = document.querySelector('section.consent .section-note');
   if(note) write(note.textContent.replace(/\s+/g, ' ').trim(), { size:8.5 });
+  const notConsent = document.querySelector('section.consent .not-consent');
+  if(notConsent) write(notConsent.textContent.replace(/\s+/g, ' ').trim(), { size:8.5, bold:true });
   [['padPatient', 'Patient signature (or authorized representative)', 'sigPatientName', 'whenPatient'],
    ['padWitness', 'Witness signature', null, 'whenWitness'],
    ['padPhysician', 'Physician signature', 'sigPhysicianName', 'whenPhysician']].forEach(([pad, label, nameId, whenId])=>{
@@ -1660,10 +1665,70 @@ function buildSimplePdf(){
   }
   return new File([pdf.output('blob')], pdfTitle() + '.pdf', { type:'application/pdf' });
 }
+/* ---------- Google version: "Save and send" ----------
+   The same form also runs inside the clinic's signed-in Google page (the Brace Forms Apps Script
+   project, opened with ?app=sdm; built by tools/build_gas.py). There, after the PDF is made, it goes
+   to the "_SDM Upload Queue" folder on Drive, and the front desk Mac's upload macro files it in the
+   patient's AMD chart. In the offline iPad app (Netlify) none of this runs and nothing is sent. */
+const GAS = !!(window.google && google.script && google.script.run);
+function gasCall(name, ...args){
+  return new Promise((ok, fail)=>google.script.run.withSuccessHandler(ok).withFailureHandler(fail)[name](...args));
+}
+let makerP = null, gasUrl = '';
+function loadPdfMaker(){
+  if(window.html2canvas && window.jspdf) return Promise.resolve();
+  if(!makerP) makerP = gasCall('getPdfMaker').then(code=>{
+    const keep = { d:window.define, m:window.module, e:window.exports };
+    window.define = undefined; window.module = undefined; window.exports = undefined;
+    try{ (0, eval)(code); } finally { window.define = keep.d; window.module = keep.m; window.exports = keep.e; }
+    if(!window.html2canvas || !window.jspdf) throw new Error('the PDF maker did not start');
+  }).catch(e=>{ makerP = null; throw e; });
+  return makerP;
+}
+function sendInfo(){
+  const bits = val('patientName').trim().split(/\s+/);
+  const last = bits.length > 1 ? bits.pop() : '';
+  return { first: bits.join(' '), last, dob: val('patientDob'), chart: val('chartNo'), date: val('formDate') || localDate(new Date()) };
+}
+function fileToBase64(file){
+  return new Promise((ok, fail)=>{
+    const r = new FileReader();
+    r.onload = ()=>ok(String(r.result).split(',')[1]);
+    r.onerror = ()=>fail(r.error);
+    r.readAsDataURL(file);
+  });
+}
+// The Google page can't reload itself, so clearing scrubs everything on screen and covers it;
+// "Start next patient" then opens a fresh copy of the page.
+function gasWipe(){
+  ['padPatient', 'padWitness', 'padPhysician', 'padInitials'].forEach(id=>{ const c = document.getElementById(id); if(c && c._clear) c._clear(); });
+  document.querySelectorAll('.init-cell img').forEach(img=>img.remove());
+  document.querySelectorAll('.proc-summary, #sigPatientName, #pdfName').forEach(el=>{ el.textContent = ''; });
+  savedInitials.patient = savedInitials.witness = null;
+  pdfFile = null;
+  document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
+  let cover = document.getElementById('gasCleared');
+  if(!cover){
+    cover = document.createElement('div');
+    cover.id = 'gasCleared';
+    cover.style.cssText = 'position:fixed;inset:0;z-index:500;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-size:18px;font-weight:600;color:var(--brand)';
+    cover.innerHTML = `<div>Form cleared</div><a class="btn btn-primary" style="flex:0 0 auto;padding:14px 28px;text-decoration:none" target="_top" href="${gasUrl}">Start next patient</a>`;
+    document.body.appendChild(cover);
+  }
+}
+if(GAS){
+  document.getElementById('printBtn').textContent = 'Save and send';
+  gasCall('sdmUrl').then(u=>{ gasUrl = u; }).catch(()=>{});
+  loadPdfMaker().catch(()=>{});                 // fetch the PDF maker in the background
+}
+
 async function savePdf(){
   const overlay = document.getElementById('pdfOverlay');
   overlay.classList.add('show');
   const why = err=>((err && err.message) || String(err)) + ((err && err.stack) ? ' @ ' + String(err.stack).split('\n')[0].slice(-80) : '');
+  if(GAS){
+    try{ await loadPdfMaker(); }catch(err){ /* the backup PDF below needs jsPDF too; its error says so */ }
+  }
   try{
     pdfFile = await buildPdf();
   }catch(err){
@@ -1674,6 +1739,31 @@ async function savePdf(){
       overlay.classList.remove('show');
       alert('Could not create the PDF (' + why(err) + ' / ' + why(err2) + ').\n\nThe form is still filled in. Do not close it. ' +
             'Take screenshots of the whole form (top button + volume up) and AirDrop them to the front desk.');
+      return;
+    }
+  }
+  if(GAS){
+    const info = sendInfo();
+    const missing = [['patient name (first and last)', info.first && info.last], ['date of birth', /^\d{2}\/\d{2}\/\d{4}$/.test(info.dob)], ['chart #', info.chart]]
+      .filter(([, ok])=>!ok).map(([label])=>label);
+    if(missing.length){
+      overlay.classList.remove('show');
+      alert('Not sent: the chart upload needs the ' + missing.join(', ') + '. Fill it in and tap Save and send again.');
+      return;
+    }
+    overlay.textContent = 'Sending to the chart…';
+    try{
+      const res = await gasCall('sdmSend', await fileToBase64(pdfFile), info);
+      overlay.classList.remove('show'); overlay.textContent = 'Creating PDF…';
+      document.getElementById('afterTitle').textContent = 'Sent to the chart';
+      document.getElementById('afterHint').innerHTML = '<b></b><br>The front desk Mac uploads it to the AdvancedMD chart. Tap <b>Print / Export</b> for AirDrop or printing (close that PDF tab when done), then clear the form for the next patient.';
+      document.querySelector('#afterHint b').textContent = res && res.name || pdfFile.name;
+      document.getElementById('pdfShare').textContent = 'Print / Export';
+      document.getElementById('afterModal').classList.add('show');
+      return;
+    }catch(err){
+      overlay.classList.remove('show'); overlay.textContent = 'Creating PDF…';
+      alert('Could not send the PDF (' + why(err) + '). The form is still filled in. Check the Wi-Fi and tap Save and send again.');
       return;
     }
   }
@@ -1707,6 +1797,13 @@ function downloadPdf(){
 // The share sheet needs its own tap, so it opens from the "PDF ready" box.
 document.getElementById('pdfShare').addEventListener('click', async ()=>{
   if(!pdfFile) return;
+  if(GAS){
+    // Google's page blocks the share sheet, so open the PDF in its own tab: Safari's Share button there has AirDrop and Print
+    const url = URL.createObjectURL(pdfFile);
+    const tab = window.open(url, '_blank');
+    setTimeout(()=>URL.revokeObjectURL(url), 120000);
+    if(tab) return;
+  }
   if(navigator.canShare && navigator.canShare({ files:[pdfFile] })){
     try{ await navigator.share({ files:[pdfFile] }); }
     catch(err){ if(err.name !== 'AbortError') downloadPdf(); }
